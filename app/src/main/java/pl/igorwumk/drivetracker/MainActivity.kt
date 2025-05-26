@@ -1,9 +1,14 @@
 package pl.igorwumk.drivetracker
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Location
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
@@ -174,8 +179,22 @@ class MainActivity : AppCompatActivity() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         // Setup onClick listeners for the buttons
-        startButton.setOnClickListener { startTracking() }
-        stopButton.setOnClickListener { stopTrackingAndSaveGPX() }
+        startButton.setOnClickListener {
+            startTracking()
+            createNotificationChannel(this)
+            val startIntent = Intent(this, TrackingService::class.java).apply {
+                action = TrackingService.ACTION_START
+            }
+            // startForegroundService for Android 0 and above
+            ContextCompat.startForegroundService(this, startIntent)
+        }
+        stopButton.setOnClickListener {
+            stopTrackingAndSaveGPX()
+            val stopIntent = Intent(this, TrackingService::class.java).apply {
+                action = TrackingService.ACTION_STOP
+            }
+            startService(stopIntent)
+        }
     }
 
     // Initialize rendering of current position on a map
@@ -326,33 +345,20 @@ class MainActivity : AppCompatActivity() {
         gpxBuilder.append("</gpx>")
         return gpxBuilder.toString()
     }
-}
 
-/*@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    DriveTrackerTheme {
-        Greeting("Android")
-        OsmdroidMapView()
+    private fun createNotificationChannel(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Tracking Channel"
+            val descriptionText = "Channel for tracking notifications"
+            val importance = NotificationManager.IMPORTANCE_LOW
+            val channel = NotificationChannel(TrackingService.CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+                enableLights(false)
+                enableVibration(false)
+            }
+            val notificationManager: NotificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
     }
 }
-
-@Composable
-fun OsmdroidMapView() {
-    val context = LocalContext.current
-    AndroidView(
-        modifier = Modifier.fillMaxSize(),
-        factory = { context ->
-            val mapView = MapView(context)
-            mapView
-        }
-    )
-}*/
