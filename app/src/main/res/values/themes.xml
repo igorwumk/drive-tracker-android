@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- style name="Theme.DriveTracker" parent="android:Theme.Material.Light.NoActionBar" /-->
+    <style name="Theme.DriveTracker" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">@color/purple_200</item>
+        <item name="colorSecondary">@color/purple_500</item>
+        <item name="colorTertiary">@color/purple_700</item>
+
+        <!--item name="colorPrimaryDark">#FFD0BCFF</item -->
+    </style>
+</resources>
