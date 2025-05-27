@@ -68,11 +68,12 @@ class TrackingService : Service() {
             // Stop tracking and end the service
             ACTION_STOP -> {
                 stopTracking()
+                stopForeground(true)
                 stopSelf()
             }
             // Start tracking if not already tracking
             ACTION_START -> {
-                if (startTime == 0L) {
+                if (!isTracking) {
                     startTracking()
                 }
             }
