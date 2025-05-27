@@ -264,7 +264,14 @@ class TrackingService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? {
         return binder
-        TODO("Implement onUnbind() - startService used, might need to unbind later")
+    }
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        // Stop the service if not tracking
+        if (!isTracking) {
+            stopSelf()
+        }
+        return super.onUnbind(intent)
     }
 
     // Expose data to the client
