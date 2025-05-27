@@ -11,10 +11,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
+import android.os.Binder
 import android.os.Build
+import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -23,12 +26,26 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 class TrackingService : Service() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
     private val locationList = mutableListOf<Location>()
     private var startTime: Long = 0L
+
+    private var isTracking = false
+
+    // Binder for clients
+    private val binder = LocalBinder()
+    // Inner class to return service instance
+    inner class LocalBinder : Binder() {
+        fun getService(): TrackingService = this@TrackingService
+    }
 
     // Handler and Runnable to update notification every second
     private val timerHandler = Handler(Looper.getMainLooper())
@@ -104,20 +121,74 @@ class TrackingService : Service() {
             locationCallback,
             Looper.getMainLooper()
         )
+        isTracking = true
 
         // Start updating the notification
         timerHandler.post(timerRunnable)
 
         // Start as foreground service with initial notification
         startForeground(NOTIFICATION_ID, buildNotification(0, 0.0))
+
+        Toast.makeText(this, "Tracking started", Toast.LENGTH_SHORT).show()
     }
 
     private fun stopTracking() {
-        // Remove location updates and stop the timer
-        fusedLocationClient.removeLocationUpdates(locationCallback)
-        timerHandler.removeCallbacks(timerRunnable)
+        if(isTracking) {
+            // Remove location updates and stop the timer
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+            timerHandler.removeCallbacks(timerRunnable)
+
+            isTracking = false
+            if (locationList.isEmpty()) {
+                Toast.makeText(this, "No location updates received!", Toast.LENGTH_LONG).show()
+                return
+            }
+
+            // Generate and save GPX file
+            val gpxData = generateGPX(locationList)
+            saveGPX(gpxData)
+        }
     }
 
+    // Save GPX data into a file from a GPX XML string
+    private fun saveGPX(gpxData: String) {
+        // Store files in Downloads folder
+        val publicDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+        val fileName = "track_${System.currentTimeMillis()}.gpx"
+        val gpxFile = File(publicDir, fileName)
+
+        // Save the GPX data
+        try {
+            gpxFile.writeText(gpxData)
+            Toast.makeText(this, "GPX saved as $fileName", Toast.LENGTH_LONG).show()
+        } catch (ex: Exception) {
+            Toast.makeText(this, "Failed to save GPX: ${ex.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    // Generate GPX XML string from LocationList
+    private fun generateGPX(locations: List<Location>): String {
+        if (locations.isEmpty()) return ""
+
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+        val gpxBuilder = StringBuilder()
+        gpxBuilder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+        gpxBuilder.append("<gpx version=\"1.1\" creator=\"YourAppName\">\n")
+        gpxBuilder.append("  <trk>\n    <trkseg>\n")
+
+        for (location in locations) {
+            gpxBuilder.append("      <trkpt lat=\"${location.latitude}\" lon=\"${location.longitude}\">\n")
+            gpxBuilder.append("        <time>${sdf.format(Date(location.time))}</time>\n")
+            gpxBuilder.append("      </trkpt>\n")
+        }
+        gpxBuilder.append("    </trkseg>\n  </trk>\n")
+        gpxBuilder.append("</gpx>")
+        return gpxBuilder.toString()
+    }
+
+    @Deprecated("New definition: getTotalDistance()")
     private fun calculateTotalDistance(): Double {
         var totalDistance = 0.0
         if (locationList.size < 2) return totalDistance
@@ -127,9 +198,9 @@ class TrackingService : Service() {
         return totalDistance
     }
 
-    private fun getElapsedTimeSeconds(): Long {
+    /*private fun getElapsedTimeSeconds(): Long {
         return (System.currentTimeMillis() - startTime) / 1000
-    }
+    }*/
 
     private fun formatTime(seconds: Long): String {
         val hours = seconds / 3600
@@ -154,10 +225,22 @@ class TrackingService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // PendingIntent to open the app
+        val openAppIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val openAppPendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Tracking Active")
             .setContentText(contentText)
             .setSmallIcon(R.drawable.ic_tracking)
+            .setContentIntent(openAppPendingIntent) // Opens the app then notification tapped
             .addAction(R.drawable.ic_stop, "STOP", stopPendingIntent)
             .setOngoing(true) // Makes notification non-dismissible
             .build()
@@ -166,7 +249,7 @@ class TrackingService : Service() {
     @SuppressLint("MissingPermission")
     private fun updateNotification() {
         val elapsedSeconds = getElapsedTimeSeconds()
-        val totalDistance = calculateTotalDistance()
+        val totalDistance = getTotalDistance()
         val notification = buildNotification(elapsedSeconds, totalDistance)
         NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, notification)
     }
@@ -179,7 +262,25 @@ class TrackingService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? {
-        return null
+        return binder
+        TODO("Implement onUnbind() - startService used, might need to unbind later")
+    }
+
+    // Expose data to the client
+    fun getLocationList(): List<Location> = locationList
+    fun getElapsedTimeSeconds(): Long {
+        if (isTracking)
+            return (System.currentTimeMillis() - startTime) / 1000
+        else
+            return 0
+    }
+    fun getTotalDistance(): Double {
+        var totalDistance = 0.0
+        if (locationList.size < 2) return totalDistance
+        for (i in 1 until locationList.size) {
+            totalDistance += locationList[i - 1].distanceTo(locationList[i])
+        }
+        return totalDistance
     }
 
     companion object {

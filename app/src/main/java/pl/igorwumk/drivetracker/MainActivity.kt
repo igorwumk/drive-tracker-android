@@ -3,8 +3,10 @@ package pl.igorwumk.drivetracker
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Location
@@ -12,6 +14,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
+import android.os.IBinder
 import android.os.Looper
 import android.preference.PreferenceManager
 import android.util.Log
@@ -75,20 +78,16 @@ class MainActivity : AppCompatActivity() {
     private val locationList = mutableListOf<Location>()
     private var tracking = false
 
+    // Service variables
+    private var trackingService: TrackingService? = null
+    private var serviceBound = false
+
     // For updating time elapsed
     private var startTime: Long = 0L
     private val timerHandler = Handler(Looper.getMainLooper())
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
-            //super.onLocationResult(result)
-            /*val newLocation = result.lastLocation
-            newLocation?.let {
-                locationList.add(newLocation)
-                // Update the map
-                val geoPoint = GeoPoint(it.latitude, it.longitude)
-                mapView.controller.animateTo(geoPoint)
-            }*/
             Log.d("MainActivity", "Received ${result.locations.size} locations")
             for (location in result.locations) {
                 locationList.add(location)
@@ -110,6 +109,37 @@ class MainActivity : AppCompatActivity() {
 
             // Post this runnable again after 1 second
             timerHandler.postDelayed(this, 1000)
+        }
+    }
+
+    // Handler to update the UI from the service
+    private val uiUpdateHandler = Handler(Looper.getMainLooper())
+    private val uiUpdateRunnable = object : Runnable {
+        override fun run() {
+            if (serviceBound && trackingService != null) {
+                val elapsed = trackingService!!.getElapsedTimeSeconds()
+                val distance = trackingService!!.getTotalDistance()
+                updateTimeElapsed(elapsed)
+                updateDistanceTravelled(distance)
+                // Update the map path
+                drawPathOnMap(trackingService!!.getLocationList())
+            }
+            uiUpdateHandler.postDelayed(this, 1000)
+        }
+    }
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as TrackingService.LocalBinder
+            trackingService = binder.getService()
+            serviceBound = true
+            // Start updating UI when bound
+            uiUpdateHandler.post(uiUpdateRunnable)
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            serviceBound = false
+            trackingService = null
         }
     }
 
@@ -175,25 +205,52 @@ class MainActivity : AppCompatActivity() {
         startButton = findViewById(R.id.startButton)
         stopButton = findViewById(R.id.stopButton)
 
+        // Create notification channel
+        createNotificationChannel(this)
+
         // Initialize LocationProvider
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         // Setup onClick listeners for the buttons
         startButton.setOnClickListener {
-            startTracking()
-            createNotificationChannel(this)
+            //startTracking()
+            //createNotificationChannel(this)
             val startIntent = Intent(this, TrackingService::class.java).apply {
                 action = TrackingService.ACTION_START
             }
             // startForegroundService for Android 0 and above
             ContextCompat.startForegroundService(this, startIntent)
+            // Bind if not bound
+            bindToTrackingService()
         }
         stopButton.setOnClickListener {
-            stopTrackingAndSaveGPX()
+            //stopTrackingAndSaveGPX()
             val stopIntent = Intent(this, TrackingService::class.java).apply {
                 action = TrackingService.ACTION_STOP
             }
             startService(stopIntent)
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (!serviceBound) {
+            bindToTrackingService()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (serviceBound) {
+            unbindService(serviceConnection)
+            serviceBound = false
+        }
+        uiUpdateHandler.removeCallbacks(uiUpdateRunnable)
+    }
+
+    private fun bindToTrackingService() {
+        Intent(this, TrackingService::class.java).also { intent ->
+            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
         }
     }
 
@@ -235,11 +292,16 @@ class MainActivity : AppCompatActivity() {
         return totalDistance
     }
 
-    // Draw the path on a map
+    @Deprecated("Service/Activity decoupling")
     private fun drawPathOnMap() {
-        if (locationList.isEmpty()) return
+        drawPathOnMap(locationList)
+    }
 
-        val geoPoints = locationList.map { GeoPoint(it.latitude, it.longitude) }
+    // Draw the path on a map
+    private fun drawPathOnMap(locations: List<Location>) {
+        if (locations.isEmpty()) return
+
+        val geoPoints = locations.map { GeoPoint(it.latitude, it.longitude) }
 
         val polyLine = Polyline().apply {
             setPoints(geoPoints)
@@ -253,10 +315,11 @@ class MainActivity : AppCompatActivity() {
 
         // Calculate distance and update UI
         val totalDistance = calculateTotalDistance()
-        updateDistanceTravelled(totalDistance)
+        //updateDistanceTravelled(totalDistance)
     }
 
     // Start location tracking
+    @Deprecated("Activity/Service decoupling")
     private fun startTracking() {
         if (tracking) return
 
@@ -293,6 +356,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Stop tracking and save the GPX data
+    @Deprecated("Activity/Service decoupling")
     private fun stopTrackingAndSaveGPX() {
         if (!tracking) return
 
