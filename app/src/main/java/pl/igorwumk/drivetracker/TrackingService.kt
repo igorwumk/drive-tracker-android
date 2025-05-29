@@ -39,6 +39,12 @@ class TrackingService : Service() {
     private var startTime: Long = 0L
 
     private var isTracking = false
+    // Callback for permission requests
+    private var permissionRequestCallback: PermissionRequestCallback? = null
+
+    fun setPermissionRequestCallback(callback: PermissionRequestCallback) {
+        permissionRequestCallback = callback
+    }
 
     // Binder for clients
     private val binder = LocalBinder()
@@ -95,7 +101,18 @@ class TrackingService : Service() {
     }
 
     private fun startTracking() {
-        // Check for permissions
+        // Check for permissions and grant them
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) {
+            permissionRequestCallback?.requestTrackingPermission()
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED) {
+            permissionRequestCallback?.requestNotificationPermission()
+        }
+
+        // Check for permissions (stop if not granted)
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED) {
             // Permission not granted, stop the service

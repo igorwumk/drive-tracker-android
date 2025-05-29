@@ -61,7 +61,12 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-class MainActivity : AppCompatActivity() {
+interface PermissionRequestCallback {
+    fun requestTrackingPermission()
+    fun requestNotificationPermission()
+}
+
+class MainActivity : AppCompatActivity(), PermissionRequestCallback {
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var toolbar: Toolbar
     private lateinit var navView: NavigationView
@@ -133,6 +138,8 @@ class MainActivity : AppCompatActivity() {
             val binder = service as TrackingService.LocalBinder
             trackingService = binder.getService()
             serviceBound = true
+            // Register the permissions callback
+            trackingService?.setPermissionRequestCallback(this@MainActivity)
             // Start updating UI when bound
             uiUpdateHandler.post(uiUpdateRunnable)
         }
@@ -190,7 +197,8 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
-        // Initialize osmdroid MapView
+        // Check for tracking permissions and initialize osmdroid MapView
+        requestTrackingPermission()
         mapView = findViewById(R.id.mapView)
         mapView.setTileSource(TileSourceFactory.MAPNIK)
         mapView.setBuiltInZoomControls(false)
@@ -229,6 +237,14 @@ class MainActivity : AppCompatActivity() {
                 action = TrackingService.ACTION_STOP
             }
             startService(stopIntent)
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (serviceBound) {
+            unbindService(serviceConnection)
+            serviceBound = false
         }
     }
 
@@ -324,35 +340,31 @@ class MainActivity : AppCompatActivity() {
         if (tracking) return
 
         // Check for location permission
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                1
-            )
+        requestTrackingPermission()
+        // Exit if permission not granted
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return
+
+        tracking = true
+        locationList.clear()
+
+        val locationRequest = LocationRequest.create().apply {
+            interval = 5000 // 5 seconds updates
+            fastestInterval = 2000
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         }
-        else {
-            tracking = true
-            locationList.clear()
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            Looper.getMainLooper()
+        )
 
-            val locationRequest = LocationRequest.create().apply {
-                interval = 5000 // 5 seconds updates
-                fastestInterval = 2000
-                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-            }
-            fusedLocationClient.requestLocationUpdates(
-                locationRequest,
-                locationCallback,
-                Looper.getMainLooper()
-            )
+        // Initiate time tracking
+        startTime = System.currentTimeMillis()
+        updateTimeElapsed()
+        timerHandler.postDelayed(timerRunnable,0)
 
-            // Initiate time tracking
-            startTime = System.currentTimeMillis()
-            updateTimeElapsed()
-            timerHandler.postDelayed(timerRunnable,0)
+        Toast.makeText(this, "Tracking started", Toast.LENGTH_SHORT).show()
 
-            Toast.makeText(this, "Tracking started", Toast.LENGTH_SHORT).show()
-        }
     }
 
     // Stop tracking and save the GPX data
@@ -423,6 +435,30 @@ class MainActivity : AppCompatActivity() {
             val notificationManager: NotificationManager =
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    override fun requestTrackingPermission() {
+        // Check for location permission
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                1
+            )
+        }
+    }
+
+    override fun requestNotificationPermission() {
+        // Check for notification permission
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                1
+            )
         }
     }
 }
