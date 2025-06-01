@@ -79,43 +79,9 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var myLocationOverlay: MyLocationNewOverlay
 
-    // List to store tracked locations
-    private val locationList = mutableListOf<Location>()
-    private var tracking = false
-
     // Service variables
     private var trackingService: TrackingService? = null
     private var serviceBound = false
-
-    // For updating time elapsed
-    private var startTime: Long = 0L
-    private val timerHandler = Handler(Looper.getMainLooper())
-
-    private val locationCallback = object : LocationCallback() {
-        override fun onLocationResult(result: LocationResult) {
-            Log.d("MainActivity", "Received ${result.locations.size} locations")
-            for (location in result.locations) {
-                locationList.add(location)
-                // Update the map
-                val geoPoint = GeoPoint(location.latitude, location.longitude)
-                mapView.controller.animateTo(geoPoint)
-            }
-            drawPathOnMap()
-        }
-    }
-
-    // Runnable that updates the timer every second
-    private val timerRunnable = object : Runnable {
-        override fun run() {
-            // Calculate elapsed time and update UI
-            val elapsedMilis = System.currentTimeMillis() - startTime
-            val elapsedSeconds = elapsedMilis / 1000
-            updateTimeElapsed(elapsedSeconds)
-
-            // Post this runnable again after 1 second
-            timerHandler.postDelayed(this, 1000)
-        }
-    }
 
     // Handler to update the UI from the service
     private val uiUpdateHandler = Handler(Looper.getMainLooper())
@@ -153,21 +119,9 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         //enableEdgeToEdge()
-        /*setContent {
-            DriveTrackerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                    OsmdroidMapView()
-                }
-            }
-        }*/
         // Setup osmdroid
         val ctx = applicationContext
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx))
-        //Configuration.getInstance().userAgentValue = "42"
 
         // Inflate the layout
         setContentView(R.layout.activity_main)
@@ -221,8 +175,6 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
 
         // Setup onClick listeners for the buttons
         startButton.setOnClickListener {
-            //startTracking()
-            //createNotificationChannel(this)
             val startIntent = Intent(this, TrackingService::class.java).apply {
                 action = TrackingService.ACTION_START
             }
@@ -232,7 +184,6 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
             bindToTrackingService()
         }
         stopButton.setOnClickListener {
-            //stopTrackingAndSaveGPX()
             val stopIntent = Intent(this, TrackingService::class.java).apply {
                 action = TrackingService.ACTION_STOP
             }
@@ -298,21 +249,6 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
         tvDistance.text = String.format("Distance: %.2f km", distanceKm)
     }
 
-    // Calculate total distance of locationList
-    private fun calculateTotalDistance(): Double {
-        var totalDistance = 0.0
-        if (locationList.size < 2) return totalDistance
-        for (i in 1 until locationList.size) {
-            totalDistance += locationList[i - 1].distanceTo(locationList[i])
-        }
-        return totalDistance
-    }
-
-    @Deprecated("Service/Activity decoupling")
-    private fun drawPathOnMap() {
-        drawPathOnMap(locationList)
-    }
-
     // Draw the path on a map
     private fun drawPathOnMap(locations: List<Location>) {
         if (locations.isEmpty()) return
@@ -328,98 +264,6 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
         mapView.overlays.removeAll { it is Polyline }
         mapView.overlays.add(polyLine)
         mapView.invalidate()
-
-        // Calculate distance and update UI
-        val totalDistance = calculateTotalDistance()
-        //updateDistanceTravelled(totalDistance)
-    }
-
-    // Start location tracking
-    @Deprecated("Activity/Service decoupling")
-    private fun startTracking() {
-        if (tracking) return
-
-        // Check for location permission
-        requestTrackingPermission()
-        // Exit if permission not granted
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return
-
-        tracking = true
-        locationList.clear()
-
-        val locationRequest = LocationRequest.create().apply {
-            interval = 5000 // 5 seconds updates
-            fastestInterval = 2000
-            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-        }
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest,
-            locationCallback,
-            Looper.getMainLooper()
-        )
-
-        // Initiate time tracking
-        startTime = System.currentTimeMillis()
-        updateTimeElapsed()
-        timerHandler.postDelayed(timerRunnable,0)
-
-        Toast.makeText(this, "Tracking started", Toast.LENGTH_SHORT).show()
-
-    }
-
-    // Stop tracking and save the GPX data
-    @Deprecated("Activity/Service decoupling")
-    private fun stopTrackingAndSaveGPX() {
-        if (!tracking) return
-
-        tracking = false
-        fusedLocationClient.removeLocationUpdates(locationCallback)
-
-        // Stop the timer
-        timerHandler.removeCallbacks(timerRunnable)
-
-        if (locationList.isEmpty()) {
-            Toast.makeText(this, "No location updates received!", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        // Generate GPX string data
-        val gpxData = generateGPX(locationList)
-
-        // Store files in Downloads folder
-        val publicDir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
-        val fileName = "track_${System.currentTimeMillis()}.gpx"
-        val gpxFile = File(publicDir, fileName)
-
-        // Save the GPX data
-        try {
-            gpxFile.writeText(gpxData)
-            Toast.makeText(this, "GPX saved as $fileName", Toast.LENGTH_LONG).show()
-        } catch (ex: Exception) {
-            Toast.makeText(this, "Failed to save GPX: ${ex.message}", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    // Generate GPX XML string from LocationList
-    private fun generateGPX(locations: List<Location>): String {
-        if (locations.isEmpty()) return ""
-
-        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-        val gpxBuilder = StringBuilder()
-        gpxBuilder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-        gpxBuilder.append("<gpx version=\"1.1\" creator=\"YourAppName\">\n")
-        gpxBuilder.append("  <trk>\n    <trkseg>\n")
-
-        for (location in locations) {
-            gpxBuilder.append("      <trkpt lat=\"${location.latitude}\" lon=\"${location.longitude}\">\n")
-            gpxBuilder.append("        <time>${sdf.format(Date(location.time))}</time>\n")
-            gpxBuilder.append("      </trkpt>\n")
-        }
-        gpxBuilder.append("    </trkseg>\n  </trk>\n")
-        gpxBuilder.append("</gpx>")
-        return gpxBuilder.toString()
     }
 
     private fun createNotificationChannel(context: Context) {
