@@ -35,10 +35,15 @@ import java.util.TimeZone
 class TrackingService : Service() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
-    private val locationList = mutableListOf<Location>()
+    //private val locationList = mutableListOf<Location>()
     private var startTime: Long = 0L
 
-    private var isTracking = false
+    // Tracking states
+    var isTracking: Boolean = false
+        private set
+    var isPaused: Boolean = false
+        private set
+
     // Callback for permission requests
     private var permissionRequestCallback: PermissionRequestCallback? = null
 
@@ -52,6 +57,12 @@ class TrackingService : Service() {
     inner class LocalBinder : Binder() {
         fun getService(): TrackingService = this@TrackingService
     }
+
+    // To accumulate only active tracking
+    private var activeTrackingTime: Long = 0L
+    private var currentSessionStartTime: Long = 0L
+    // Multiple segments instead of a single location list
+    private val pathSegments = mutableListOf<MutableList<Location>>()
 
     // Handler and Runnable to update notification every second
     private val timerHandler = Handler(Looper.getMainLooper())
@@ -71,16 +82,30 @@ class TrackingService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            // Stop tracking and end the service
-            ACTION_STOP -> {
-                stopTracking()
-                stopForeground(true)
-                stopSelf()
-            }
             // Start tracking if not already tracking
             ACTION_START -> {
                 if (!isTracking) {
                     startTracking()
+                }
+            }
+            // Pause tracking
+            ACTION_PAUSE -> {
+                if (isTracking && !isPaused) {
+                    pauseTracking()
+                }
+            }
+            // Resume tracking
+            ACTION_RESUME -> {
+                if (isTracking && isPaused) {
+                    resumeTracking()
+                }
+            }
+            // Stop tracking and end the service
+            ACTION_STOP -> {
+                if (isTracking) {
+                    stopTracking()
+                    stopForeground(true)
+                    stopSelf()
                 }
             }
         }
@@ -92,7 +117,9 @@ class TrackingService : Service() {
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
                 for (location in result.locations) {
-                    locationList.add(location)
+                    if (isTracking && !isPaused && pathSegments.isNotEmpty()) {
+                        pathSegments.last().add(location)
+                    }
                 }
                 // Update notification with current distance and time
                 updateNotification()
@@ -126,44 +153,63 @@ class TrackingService : Service() {
             return
         }
 
-        startTime = System.currentTimeMillis()
-        // Configure location request
-        val locationRequest = LocationRequest.create().apply {
-            interval = 5000
-            fastestInterval = 2000
-            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-        }
-
-        fusedLocationClient.requestLocationUpdates(
-            locationRequest,
-            locationCallback,
-            Looper.getMainLooper()
-        )
         isTracking = true
+        isPaused = false
+        activeTrackingTime = 0L
+        currentSessionStartTime = System.currentTimeMillis()
+        pathSegments.clear()
+        pathSegments.add(mutableListOf())
+        requestLocationUpdates()
 
         // Start updating the notification
         timerHandler.post(timerRunnable)
 
         // Start as foreground service with initial notification
-        startForeground(NOTIFICATION_ID, buildNotification(0, 0.0))
+        startForeground(NOTIFICATION_ID, buildNotification())
 
         Toast.makeText(this, "Tracking started", Toast.LENGTH_SHORT).show()
     }
 
+    // Pause tracking: remove location updates; add the current active period to the total
+    private fun pauseTracking() {
+        if (!isPaused) {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+            activeTrackingTime += (System.currentTimeMillis() - currentSessionStartTime)
+            currentSessionStartTime = 0L
+            isPaused = true
+            updateNotification()
+        }
+    }
+
+    private fun resumeTracking() {
+        if (isPaused) {
+            isPaused = false
+            currentSessionStartTime = System.currentTimeMillis()
+            pathSegments.add(mutableListOf())
+            requestLocationUpdates()
+            updateNotification()
+        }
+    }
+
     private fun stopTracking() {
-        if(isTracking) {
+        if (isTracking) {
+            if (!isPaused) {
+                activeTrackingTime += (System.currentTimeMillis() - currentSessionStartTime)
+                currentSessionStartTime = 0L
+            }
             // Remove location updates and stop the timer
             fusedLocationClient.removeLocationUpdates(locationCallback)
             timerHandler.removeCallbacks(timerRunnable)
-
             isTracking = false
-            if (locationList.isEmpty()) {
+            isPaused = false
+
+            if (pathSegments.first().isEmpty()) {
                 Toast.makeText(this, "No location updates received!", Toast.LENGTH_LONG).show()
                 return
             }
 
             // Generate and save GPX file
-            val gpxData = generateGPX(locationList)
+            val gpxData = generateGPX(pathSegments)
             saveGPX(gpxData)
         }
     }
@@ -185,8 +231,8 @@ class TrackingService : Service() {
     }
 
     // Generate GPX XML string from LocationList
-    private fun generateGPX(locations: List<Location>): String {
-        if (locations.isEmpty()) return ""
+    private fun generateGPX(segments: List<List<Location>>): String {
+        if (segments.isEmpty()) return ""
 
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
             timeZone = TimeZone.getTimeZone("UTC")
@@ -194,7 +240,7 @@ class TrackingService : Service() {
         val gpxBuilder = StringBuilder()
         gpxBuilder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
         gpxBuilder.append("<gpx version=\"1.1\" creator=\"YourAppName\">\n")
-        gpxBuilder.append("  <trk>\n    <trkseg>\n")
+        /*gpxBuilder.append("  <trk>\n    <trkseg>\n")
 
         for (location in locations) {
             gpxBuilder.append("      <trkpt lat=\"${location.latitude}\" lon=\"${location.longitude}\">\n")
@@ -202,11 +248,39 @@ class TrackingService : Service() {
             gpxBuilder.append("      </trkpt>\n")
         }
         gpxBuilder.append("    </trkseg>\n  </trk>\n")
+        gpxBuilder.append("</gpx>")*/
+        gpxBuilder.append("  <trk>\n")
+        segments.forEach { segment ->
+            gpxBuilder.append("    <trkseg>\n")
+            segment.forEach { loc ->
+                gpxBuilder.append("      <trkpt lat=\"${loc.latitude}\" lon=\"${loc.longitude}\">\n")
+                gpxBuilder.append("        <time>${sdf.format(Date(loc.time))}</time>\n")
+                gpxBuilder.append("      </trkpt>\n")
+            }
+            gpxBuilder.append("    </trkseg>\n")
+        }
         gpxBuilder.append("</gpx>")
         return gpxBuilder.toString()
     }
 
-    @Deprecated("New definition: getTotalDistance()")
+    // Request location updates
+    @SuppressLint("MissingPermission")
+    private fun requestLocationUpdates() {
+        // Configure location request
+        val locationRequest = LocationRequest.create().apply {
+            interval = 5000
+            fastestInterval = 2000
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            Looper.getMainLooper()
+        )
+    }
+
+    /*@Deprecated("New definition: getTotalDistance()")
     private fun calculateTotalDistance(): Double {
         var totalDistance = 0.0
         if (locationList.size < 2) return totalDistance
@@ -214,12 +288,13 @@ class TrackingService : Service() {
             totalDistance += locationList[i - 1].distanceTo(locationList[i])
         }
         return totalDistance
-    }
+    }*/
 
     /*private fun getElapsedTimeSeconds(): Long {
         return (System.currentTimeMillis() - startTime) / 1000
     }*/
 
+    // Format seconds into HH:MM:SS
     private fun formatTime(seconds: Long): String {
         val hours = seconds / 3600
         val minutes = (seconds % 3600) / 60
@@ -227,8 +302,10 @@ class TrackingService : Service() {
         return String.format("%02d:%02d:%02d", hours, minutes, secs)
     }
 
-    private fun buildNotification(elapsedSeconds: Long, distanceInMeters: Double): Notification {
-        val distanceKm = distanceInMeters / 1000.0
+    private fun buildNotification(): Notification {
+        val elapsedSeconds = getElapsedTimeSeconds()
+        val totalDistanceMeters = getTotalDistance()
+        val distanceKm = totalDistanceMeters / 1000.0
         val timeFormatted = formatTime(elapsedSeconds)
         val contentText = "Time: $timeFormatted | Distance: %.2f km".format(distanceKm)
 
@@ -240,6 +317,27 @@ class TrackingService : Service() {
             this,
             0,
             stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Pause / resume action depending on isPaused
+        val (actionIntent, actionTitle, actionIcon) = if (isPaused) {
+            Triple(
+                Intent(this, TrackingService::class.java).apply { action = ACTION_RESUME },
+                "RESUME",
+                R.drawable.ic_resume
+            )
+        } else {
+            Triple(
+                Intent(this, TrackingService::class.java).apply { action = ACTION_PAUSE },
+                "PAUSE",
+                R.drawable.ic_pause
+            )
+        }
+        val actionPendingIntent = PendingIntent.getService(
+            this,
+            1,
+            actionIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -255,10 +353,11 @@ class TrackingService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Tracking Active")
+            .setContentTitle("Tracking " + if (isPaused) "Paused" else "Active")
             .setContentText(contentText)
             .setSmallIcon(R.drawable.ic_tracking)
             .setContentIntent(openAppPendingIntent) // Opens the app then notification tapped
+            .addAction(actionIcon, actionTitle, actionPendingIntent)
             .addAction(R.drawable.ic_stop, "STOP", stopPendingIntent)
             .setOngoing(true) // Makes notification non-dismissible
             .build()
@@ -266,15 +365,14 @@ class TrackingService : Service() {
 
     @SuppressLint("MissingPermission")
     private fun updateNotification() {
-        val elapsedSeconds = getElapsedTimeSeconds()
-        val totalDistance = getTotalDistance()
-        val notification = buildNotification(elapsedSeconds, totalDistance)
+        val notification = buildNotification()
         NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, notification)
     }
 
     override fun onDestroy() {
         // Clean up updates
         stopTracking()
+        stopForeground(true)
         NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID)
         super.onDestroy()
     }
@@ -292,24 +390,32 @@ class TrackingService : Service() {
     }
 
     // Expose data to the client
-    fun getLocationList(): List<Location> = locationList
+    //fun getLocationList(): List<Location> = locationList
+    fun getPathSegments(): List<List<Location>> = pathSegments
     fun getElapsedTimeSeconds(): Long {
-        if (isTracking)
-            return (System.currentTimeMillis() - startTime) / 1000
+        if (isTracking) {
+            val currentInterval = if (!isPaused && isTracking) System.currentTimeMillis() - currentSessionStartTime else 0L
+            return (activeTrackingTime + currentInterval) / 1000
+        }
         else
             return 0
     }
     fun getTotalDistance(): Double {
         var totalDistance = 0.0
-        if (locationList.size < 2) return totalDistance
-        for (i in 1 until locationList.size) {
-            totalDistance += locationList[i - 1].distanceTo(locationList[i])
+        for (segment in pathSegments) {
+            if (segment.size >= 2) {
+                for (i in 1 until segment.size) {
+                    totalDistance += segment[i - 1].distanceTo(segment[i])
+                }
+            }
         }
         return totalDistance
     }
 
     companion object {
         const val ACTION_START = "pl.igorwumk.drivetracker.action.START"
+        const val ACTION_PAUSE = "pl.igorwumk.drivetracker.action.PAUSE"
+        const val ACTION_RESUME = "pl.igorwumk.drivetracker.action.RESUME"
         const val ACTION_STOP = "pl.igorwumk.drivetracker.action.STOP"
         const val NOTIFICATION_ID = 1
         const val CHANNEL_ID = "tracking_channel"

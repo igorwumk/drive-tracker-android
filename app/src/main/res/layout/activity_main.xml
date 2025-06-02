@@ -58,18 +58,28 @@
                 android:textSize="16sp" />
         </LinearLayout>
 
-        <!-- Horizontal layout for START and STOP buttons -->
-        <LinearLayout
+        <!-- Initially only start button -->
+        <Button
+            android:id="@+id/startButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:text="START" />
+
+        <!-- Horizontal layout for PAUSE/RESUME and STOP buttons -->
+        <LinearLayout
+            android:id="@+id/pauseStopBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            android:layout_marginTop="16dp">
 
             <Button
-                android:id="@+id/startButton"
+                android:id="@+id/pauseResumeButton"
                 android:layout_width="0dp"
                 android:layout_weight="1"
                 android:layout_height="wrap_content"
-                android:text="START" />
+                android:text="PAUSE" />
 
             <Button
                 android:id="@+id/stopButton"

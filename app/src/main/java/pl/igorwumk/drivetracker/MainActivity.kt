@@ -18,7 +18,9 @@ import android.os.IBinder
 import android.os.Looper
 import android.preference.PreferenceManager
 import android.util.Log
+import android.view.View
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -75,6 +77,7 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
     private lateinit var tvTime: TextView
     private lateinit var tvDistance: TextView
     private lateinit var startButton: Button
+    private lateinit var pauseResumeButton: Button
     private lateinit var stopButton: Button
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var myLocationOverlay: MyLocationNewOverlay
@@ -93,7 +96,7 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
                 updateTimeElapsed(elapsed)
                 updateDistanceTravelled(distance)
                 // Update the map path
-                drawPathOnMap(trackingService!!.getLocationList())
+                drawPathOnMap(trackingService!!.getPathSegments())
             }
             uiUpdateHandler.postDelayed(this, 1000)
         }
@@ -106,6 +109,8 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
             serviceBound = true
             // Register the permissions callback
             trackingService?.setPermissionRequestCallback(this@MainActivity)
+            // Update the UI buttons at connection
+            updateUIFromService()
             // Start updating UI when bound
             uiUpdateHandler.post(uiUpdateRunnable)
         }
@@ -113,6 +118,26 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
         override fun onServiceDisconnected(name: ComponentName?) {
             serviceBound = false
             trackingService = null
+        }
+    }
+
+    private fun updateUIFromService() {
+        trackingService?.let { service ->
+            if (service.isTracking) {
+                // Tracking active -> show pause/stop buttons
+                startButton.visibility = View.GONE
+                findViewById<LinearLayout>(R.id.pauseStopBar).visibility = View.VISIBLE
+                // Update text of pause/resume button
+                pauseResumeButton.text = if (service.isPaused) "RESUME" else "PAUSE"
+            } else {
+                // Not tracking -> show start button
+                startButton.visibility = View.VISIBLE
+                findViewById<LinearLayout>(R.id.pauseStopBar).visibility = View.GONE
+            }
+        } ?: run {
+            // Ensure default UI state if service is null
+            startButton.visibility = View.VISIBLE
+            findViewById<LinearLayout>(R.id.pauseStopBar).visibility = View.GONE
         }
     }
 
@@ -165,7 +190,11 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
         tvTime = findViewById(R.id.tvTime)
         tvDistance = findViewById(R.id.tvDistance)
         startButton = findViewById(R.id.startButton)
+        pauseResumeButton = findViewById(R.id.pauseResumeButton)
         stopButton = findViewById(R.id.stopButton)
+
+        // At start only start button visible
+        startButton.visibility = View.VISIBLE
 
         // Create notification channel
         createNotificationChannel(this)
@@ -182,12 +211,34 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
             ContextCompat.startForegroundService(this, startIntent)
             // Bind if not bound
             bindToTrackingService()
+            updateUIForTrackingStarted()
+        }
+        pauseResumeButton.setOnClickListener {
+            trackingService?.let {
+                if (it.isPaused) {
+                    // Resume tracking
+                    val resumeIntent = Intent(this, TrackingService::class.java).apply {
+                        action = TrackingService.ACTION_RESUME
+                    }
+                    startService(resumeIntent)
+                    pauseResumeButton.text = "PAUSE"
+                } else {
+                    // Pause tracking
+                    val pauseIntent = Intent(this, TrackingService::class.java).apply {
+                        action = TrackingService.ACTION_PAUSE
+                    }
+                    startService(pauseIntent)
+                    pauseResumeButton.text = "RESUME"
+                }
+            }
         }
         stopButton.setOnClickListener {
             val stopIntent = Intent(this, TrackingService::class.java).apply {
                 action = TrackingService.ACTION_STOP
             }
             startService(stopIntent)
+            //unbindService(serviceConnection)
+            updateUIForTrackingStopped()
         }
     }
 
@@ -221,6 +272,18 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
         }
     }
 
+    private fun updateUIForTrackingStarted() {
+        startButton.visibility = View.GONE
+        // Show pause/resume + stop buttons
+        findViewById<LinearLayout>(R.id.pauseStopBar).visibility = View.VISIBLE
+        pauseResumeButton.text = "PAUSE"
+    }
+
+    private fun updateUIForTrackingStopped() {
+        startButton.visibility = View.VISIBLE
+        findViewById<LinearLayout>(R.id.pauseStopBar).visibility = View.GONE
+    }
+
     // Initialize rendering of current position on a map
     private fun setupLocationOverlay() {
         myLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(this), mapView)
@@ -250,19 +313,21 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
     }
 
     // Draw the path on a map
-    private fun drawPathOnMap(locations: List<Location>) {
-        if (locations.isEmpty()) return
-
-        val geoPoints = locations.map { GeoPoint(it.latitude, it.longitude) }
-
-        val polyLine = Polyline().apply {
-            setPoints(geoPoints)
-            color = Color.RED
-            width = 5.0f
-        }
+    private fun drawPathOnMap(segments: List<List<Location>>) {
+        if (segments.isEmpty()) return
 
         mapView.overlays.removeAll { it is Polyline }
-        mapView.overlays.add(polyLine)
+
+        for (segment in segments) {
+            val geoPoints = segment.map { GeoPoint(it.latitude, it.longitude) }
+            val polyLine = Polyline().apply {
+                setPoints(geoPoints)
+                color = Color.RED
+                width = 5.0f
+            }
+            mapView.overlays.add(polyLine)
+        }
+
         mapView.invalidate()
     }
 
