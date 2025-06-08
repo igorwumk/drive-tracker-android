@@ -26,6 +26,13 @@ import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -82,11 +89,21 @@ class TrackingService : Service() {
         stateChangeListener?.invoke()
     }
 
+    // Database object
+    private lateinit var database: TrackingDatabase
+
+    // For database writes
+    private val serviceJob = SupervisorJob()
+    private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
+
     override fun onCreate() {
         super.onCreate()
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
         createLocationCallback()
+
+        // Initialize the database
+        database = TrackingDatabase.getDatabase(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -221,8 +238,61 @@ class TrackingService : Service() {
             }
 
             // Generate and save GPX file
-            val gpxData = generateGPX(pathSegments)
-            saveGPX(gpxData)
+            //val gpxData = generateGPX(pathSegments)
+            //saveGPX(gpxData)
+            // Save data to the Room database
+            saveTrackingToDatabase()
+        }
+    }
+
+    private fun saveTrackingToDatabase() {
+        // Capture needed metadata
+        val sessionStartTime =
+            if (pathSegments.isNotEmpty() && pathSegments.first().isNotEmpty()) {
+                // Time of first point in first path segment
+                pathSegments.first().first().time
+            } else {
+                System.currentTimeMillis()
+            }
+        val timezone = java.util.TimeZone.getDefault().id
+        val locale = java.util.Locale.getDefault().toLanguageTag()
+
+        // Create a tracking session record
+        val session = TrackingSession(
+            startTime = sessionStartTime,
+            totalDistance = getTotalDistance(),
+            totalTime = getElapsedTimeSeconds(),
+            timezone = timezone,
+            locale = locale
+        )
+
+        // Save to database in background thread
+        serviceScope.launch(Dispatchers.IO) {
+            // Insert session and get auto-generated id
+            val sessionId = database.sessionDao().insertSession(session)
+
+            // For each segment, insert it and its points
+            pathSegments.forEachIndexed { segmentIndex, segment ->
+                val seg = TrackingSegment(
+                    sessionId = sessionId,
+                    segmentOrder = segmentIndex
+                )
+                val segmentId = database.segmentDao().insertSegment(seg)
+                // Create TrackingPoint instance for each Location in segment
+                val points = segment.mapIndexed { pointIndex, location ->
+                    TrackingPoint(
+                        segmentId = segmentId,
+                        pointOrder = pointIndex,
+                        latitude = location.latitude,
+                        longitude = location.longitude,
+                        timestamp = location.time
+                    )
+                }
+                database.pointDao().insertPoints(points)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@TrackingService, "Saved tracking session to database", Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
@@ -273,6 +343,32 @@ class TrackingService : Service() {
         }
         gpxBuilder.append("</gpx>")
         return gpxBuilder.toString()
+    }
+
+    // Generate GPX XML string from database record
+    private fun generateGPXFromSession(sessionWithSegments: TrackingSessionWithSegments): String {
+        val builder = StringBuilder()
+        builder.append("""<gpx version="1.1" creator="pl.igorwumk.drivetracker">""")
+        builder.append("\n  <metadata>")
+        builder.append("\n    <time>${java.util.Date(sessionWithSegments.session.startTime)}</time>")
+        builder.append("\n    <author><name>${sessionWithSegments.session.locale}</name></author>")
+        builder.append("\n  </metadata>")
+        builder.append("\n  <trk>")
+        builder.append("\n    <name>Tracking Session</name>")
+        // Iterate over segments in order
+        sessionWithSegments.segments.sortedBy { it.segment.segmentOrder }
+            .forEach { segmentWithPoints ->
+                builder.append("\n    <trkseg>")
+                segmentWithPoints.points.sortedBy { it.pointOrder }.forEach { point ->
+                    builder.append("\n      <trkpt lat=\"${point.latitude}\" lon=\"${point.longitude}\">")
+                    builder.append("\n        <time>${java.util.Date(point.timestamp)}</time>")
+                    builder.append("\n      </trkpt>")
+                }
+                builder.append("\n    </trkseg>")
+            }
+        builder.append("\n  </trk>")
+        builder.append("\n</gpx>")
+        return builder.toString()
     }
 
     // Request location updates
@@ -386,6 +482,9 @@ class TrackingService : Service() {
         stopTracking()
         stopForeground(true)
         NotificationManagerCompat.from(this).cancel(NOTIFICATION_ID)
+        serviceScope.launch {
+            serviceJob.join()
+        }
         super.onDestroy()
     }
 
