@@ -109,8 +109,11 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
             serviceBound = true
             // Register the permissions callback
             trackingService?.setPermissionRequestCallback(this@MainActivity)
-            // Update the UI buttons at connection
+            // Update the UI buttons at connection and setup updates
             updateUIFromService()
+            trackingService?.setTrackingStateChangeListener {
+                runOnUiThread { updateUIFromService() }
+            }
             // Start updating UI when bound
             uiUpdateHandler.post(uiUpdateRunnable)
         }
@@ -245,6 +248,7 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
     override fun onDestroy() {
         super.onDestroy()
         if (serviceBound) {
+            trackingService?.setTrackingStateChangeListener(null)
             unbindService(serviceConnection)
             serviceBound = false
         }

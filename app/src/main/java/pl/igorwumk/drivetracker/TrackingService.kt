@@ -73,6 +73,15 @@ class TrackingService : Service() {
         }
     }
 
+    // For UI button update when activity in foreground
+    private var stateChangeListener: (() -> Unit)? = null
+    fun setTrackingStateChangeListener(listener: (() -> Unit)?) {
+        stateChangeListener = listener
+    }
+    private fun notifyStateChanged() {
+        stateChangeListener?.invoke()
+    }
+
     override fun onCreate() {
         super.onCreate()
 
@@ -178,6 +187,7 @@ class TrackingService : Service() {
             currentSessionStartTime = 0L
             isPaused = true
             updateNotification()
+            notifyStateChanged()
         }
     }
 
@@ -188,6 +198,7 @@ class TrackingService : Service() {
             pathSegments.add(mutableListOf())
             requestLocationUpdates()
             updateNotification()
+            notifyStateChanged()
         }
     }
 
@@ -202,6 +213,7 @@ class TrackingService : Service() {
             timerHandler.removeCallbacks(timerRunnable)
             isTracking = false
             isPaused = false
+            notifyStateChanged()
 
             if (pathSegments.first().isEmpty()) {
                 Toast.makeText(this, "No location updates received!", Toast.LENGTH_LONG).show()
