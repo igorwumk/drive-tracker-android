@@ -14,6 +14,9 @@ interface TrackingSessionDao {
     @Query("SELECT * FROM tracking_sessions WHERE sessionId = :sessionId")
     suspend fun getSession(sessionId: Long): TrackingSession?
 
+    @Query("SELECT * FROM tracking_sessions ORDER BY startTime DESC")
+    suspend fun getAllSessions(): List<TrackingSession>
+
     @Transaction
     @Query("SELECT * FROM tracking_sessions WHERE sessionId = :sessionId")
     suspend fun getSessionWithSegments(sessionId: Long): TrackingSessionWithSegments?

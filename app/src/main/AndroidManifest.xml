@@ -30,6 +30,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".HistoryActivity"
+            android:label="History" />
+        <activity
+            android:name=".TrackingDetailActivity"
+            android:label="Tracking Details" />
+
         <service
             android:name=".TrackingService"
             android:exported="false"

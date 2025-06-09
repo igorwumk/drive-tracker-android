@@ -261,7 +261,7 @@ class TrackingService : Service() {
         val session = TrackingSession(
             startTime = sessionStartTime,
             totalDistance = getTotalDistance(),
-            totalTime = getElapsedTimeSeconds(),
+            totalTime = getElapsedTimeSeconds(true),
             timezone = timezone,
             locale = locale
         )
@@ -503,8 +503,8 @@ class TrackingService : Service() {
     // Expose data to the client
     //fun getLocationList(): List<Location> = locationList
     fun getPathSegments(): List<List<Location>> = pathSegments
-    fun getElapsedTimeSeconds(): Long {
-        if (isTracking) {
+    fun getElapsedTimeSeconds(force: Boolean = false): Long {
+        if (isTracking || force) {
             val currentInterval = if (!isPaused && isTracking) System.currentTimeMillis() - currentSessionStartTime else 0L
             return (activeTrackingTime + currentInterval) / 1000
         }

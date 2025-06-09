@@ -12,56 +12,31 @@ import android.graphics.Color
 import android.location.Location
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.preference.PreferenceManager
-import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.navigation.NavigationView
 import org.osmdroid.api.IMapController
 import org.osmdroid.config.Configuration
-import org.osmdroid.library.BuildConfig
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
-import pl.igorwumk.drivetracker.ui.theme.DriveTrackerTheme
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
 interface PermissionRequestCallback {
     fun requestTrackingPermission()
@@ -71,7 +46,7 @@ interface PermissionRequestCallback {
 class MainActivity : AppCompatActivity(), PermissionRequestCallback {
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var toolbar: Toolbar
-    private lateinit var navView: NavigationView
+    private lateinit var navigationView: NavigationView
 
     private lateinit var mapView: MapView
     private lateinit var tvTime: TextView
@@ -160,7 +135,7 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
 
         // Bind layout and nav
         drawerLayout = findViewById(R.id.drawer_layout)
-        navView = findViewById(R.id.nav_view)
+        navigationView = findViewById(R.id.nav_view)
 
         // Setup hamburger button
         val toggle = ActionBarDrawerToggle(
@@ -174,10 +149,21 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
         toggle.syncState()
 
         // Listen for navigation item selections
-        navView.setNavigationItemSelectedListener { menuItem ->
+        navigationView.setNavigationItemSelectedListener {
+            when (it.itemId) {
+                R.id.nav_main -> {
+                    // Already in MainActivity - no action needed
+                }
+                R.id.nav_history -> {
+                    // Navigate to History screen
+                    val intent = Intent(this, HistoryActivity::class.java)
+                    startActivity(intent)
+                }
+            }
             drawerLayout.closeDrawers()
             true
         }
+
 
         // Check for tracking permissions and initialize osmdroid MapView
         requestTrackingPermission()
