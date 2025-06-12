@@ -40,7 +40,10 @@ abstract class BaseDrawerActivity : AppCompatActivity() {
                 R.id.nav_main -> {
                     // Go to MainActivity
                     if (this !is MainActivity) {
-                        startActivity(Intent(this, MainActivity::class.java))
+                        val intent = Intent(this, MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        }
+                        startActivity(intent)
                         finish()
                     }
                 }
@@ -48,7 +51,7 @@ abstract class BaseDrawerActivity : AppCompatActivity() {
                     // Go to HistoryActivity
                     if (this !is HistoryActivity) {
                         startActivity(Intent(this, HistoryActivity::class.java))
-                        finish()
+                        //finish()
                     }
                 }
             }
