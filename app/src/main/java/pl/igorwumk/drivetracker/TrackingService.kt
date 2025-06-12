@@ -345,32 +345,6 @@ class TrackingService : Service() {
         return gpxBuilder.toString()
     }
 
-    // Generate GPX XML string from database record
-    private fun generateGPXFromSession(sessionWithSegments: TrackingSessionWithSegments): String {
-        val builder = StringBuilder()
-        builder.append("""<gpx version="1.1" creator="pl.igorwumk.drivetracker">""")
-        builder.append("\n  <metadata>")
-        builder.append("\n    <time>${java.util.Date(sessionWithSegments.session.startTime)}</time>")
-        builder.append("\n    <author><name>${sessionWithSegments.session.locale}</name></author>")
-        builder.append("\n  </metadata>")
-        builder.append("\n  <trk>")
-        builder.append("\n    <name>Tracking Session</name>")
-        // Iterate over segments in order
-        sessionWithSegments.segments.sortedBy { it.segment.segmentOrder }
-            .forEach { segmentWithPoints ->
-                builder.append("\n    <trkseg>")
-                segmentWithPoints.points.sortedBy { it.pointOrder }.forEach { point ->
-                    builder.append("\n      <trkpt lat=\"${point.latitude}\" lon=\"${point.longitude}\">")
-                    builder.append("\n        <time>${java.util.Date(point.timestamp)}</time>")
-                    builder.append("\n      </trkpt>")
-                }
-                builder.append("\n    </trkseg>")
-            }
-        builder.append("\n  </trk>")
-        builder.append("\n</gpx>")
-        return builder.toString()
-    }
-
     // Request location updates
     @SuppressLint("MissingPermission")
     private fun requestLocationUpdates() {
@@ -530,5 +504,39 @@ class TrackingService : Service() {
         const val ACTION_STOP = "pl.igorwumk.drivetracker.action.STOP"
         const val NOTIFICATION_ID = 1
         const val CHANNEL_ID = "tracking_channel"
+
+        // Gather points from DB and assemble GPX text
+        suspend fun generateGPX(context: Context, sessionId: Long): String {
+            val db = TrackingDatabase.getDatabase(context)
+            val sessionWithSegments = db.sessionDao().getSessionWithSegments(sessionId)
+                ?: throw IllegalArgumentException("Session not found")
+            return generateGPXFromSession(sessionWithSegments)
+        }
+
+        // Generate GPX XML string from database record
+        private fun generateGPXFromSession(sessionWithSegments: TrackingSessionWithSegments): String {
+            val builder = StringBuilder()
+            builder.append("""<gpx version="1.1" creator="pl.igorwumk.drivetracker">""")
+            builder.append("\n  <metadata>")
+            builder.append("\n    <time>${java.util.Date(sessionWithSegments.session.startTime)}</time>")
+            builder.append("\n    <author><name>${sessionWithSegments.session.locale}</name></author>")
+            builder.append("\n  </metadata>")
+            builder.append("\n  <trk>")
+            builder.append("\n    <name>Tracking Session</name>")
+            // Iterate over segments in order
+            sessionWithSegments.segments.sortedBy { it.segment.segmentOrder }
+                .forEach { segmentWithPoints ->
+                    builder.append("\n    <trkseg>")
+                    segmentWithPoints.points.sortedBy { it.pointOrder }.forEach { point ->
+                        builder.append("\n      <trkpt lat=\"${point.latitude}\" lon=\"${point.longitude}\">")
+                        builder.append("\n        <time>${java.util.Date(point.timestamp)}</time>")
+                        builder.append("\n      </trkpt>")
+                    }
+                    builder.append("\n    </trkseg>")
+                }
+            builder.append("\n  </trk>")
+            builder.append("\n</gpx>")
+            return builder.toString()
+        }
     }
 }

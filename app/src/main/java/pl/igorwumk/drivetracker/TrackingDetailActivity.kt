@@ -1,9 +1,16 @@
 package pl.igorwumk.drivetracker
 
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -15,23 +22,35 @@ import org.osmdroid.views.overlay.Polyline
 import java.util.Date
 
 class TrackingDetailActivity : AppCompatActivity() {
-
+    private lateinit var toolbar: Toolbar
     private lateinit var mapView: MapView
     private lateinit var textViewDetails: TextView
     private lateinit var database: TrackingDatabase
+
+    private val createDocument = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/gpx+xml")
+    ) { uri: Uri? ->
+        uri?.let { persistGPXToURI(it) }
+    }
+
+    private var sessionId: Long = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_tracking_detail)
 
+        toolbar = findViewById(R.id.tracking_detail_toolbar)
         mapView = findViewById(R.id.details_map_view)
         textViewDetails = findViewById(R.id.text_view_details)
+
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         // Database instance
         database = TrackingDatabase.getDatabase(this)
 
         // Get session ID from Intent extras
-        val sessionId = intent.getLongExtra("SESSION_ID", -1)
+        sessionId = intent.getLongExtra("SESSION_ID", -1)
         if (sessionId == -1L) {
             finish() // Invalid session - exit
             return
@@ -47,6 +66,49 @@ class TrackingDetailActivity : AppCompatActivity() {
                         "Distance: ${sessionData.session.totalDistance} m\n" +
                         "Time: ${sessionData.session.totalTime} sec"
                     drawSegmentsOnMap(sessionData.segments)
+                }
+            }
+        }
+    }
+
+    // Inflate options menu
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_tracking_detail, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_export_gpx -> {
+                // Launch SAF create-document prompt
+                val defaultName = "track_${sessionId}.gpx"
+                createDocument.launch(defaultName)
+                true
+            }
+            android.R.id.home -> {
+                onBackPressed()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun persistGPXToURI(uri: Uri) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // Generate GPX text
+                val gpxText = TrackingService.generateGPX(this@TrackingDetailActivity, sessionId)
+                // Type GPX contents
+                contentResolver.openOutputStream(uri)?.use { out ->
+                    out.write(gpxText.toByteArray(Charsets.UTF_8))
+                }
+                // Notify user
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@TrackingDetailActivity, "GPX exported successfully", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@TrackingDetailActivity, "Export failed", Toast.LENGTH_LONG).show()
                 }
             }
         }
