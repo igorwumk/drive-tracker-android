@@ -43,11 +43,7 @@ interface PermissionRequestCallback {
     fun requestNotificationPermission()
 }
 
-class MainActivity : AppCompatActivity(), PermissionRequestCallback {
-    private lateinit var drawerLayout: DrawerLayout
-    private lateinit var toolbar: Toolbar
-    private lateinit var navigationView: NavigationView
-
+class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
     private lateinit var mapView: MapView
     private lateinit var tvTime: TextView
     private lateinit var tvDistance: TextView
@@ -127,43 +123,8 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
         Configuration.getInstance().load(ctx, PreferenceManager.getDefaultSharedPreferences(ctx))
 
         // Inflate the layout
-        setContentView(R.layout.activity_main)
-
-        // Setup toolbar
-        toolbar = findViewById(R.id.toolbar)
-        setSupportActionBar(toolbar)
-
-        // Bind layout and nav
-        drawerLayout = findViewById(R.id.drawer_layout)
-        navigationView = findViewById(R.id.nav_view)
-
-        // Setup hamburger button
-        val toggle = ActionBarDrawerToggle(
-            this,
-            drawerLayout,
-            toolbar,
-            R.string.navigation_drawer_open,
-            R.string.navigation_drawer_close
-        )
-        drawerLayout.addDrawerListener(toggle)
-        toggle.syncState()
-
-        // Listen for navigation item selections
-        navigationView.setNavigationItemSelectedListener {
-            when (it.itemId) {
-                R.id.nav_main -> {
-                    // Already in MainActivity - no action needed
-                }
-                R.id.nav_history -> {
-                    // Navigate to History screen
-                    val intent = Intent(this, HistoryActivity::class.java)
-                    startActivity(intent)
-                }
-            }
-            drawerLayout.closeDrawers()
-            true
-        }
-
+        //setContentView(R.layout.activity_main)
+        layoutInflater.inflate(R.layout.activity_main, findViewById(R.id.content_frame), true)
 
         // Check for tracking permissions and initialize osmdroid MapView
         requestTrackingPermission()
@@ -229,6 +190,10 @@ class MainActivity : AppCompatActivity(), PermissionRequestCallback {
             //unbindService(serviceConnection)
             updateUIForTrackingStopped()
         }
+    }
+
+    override fun getLayoutResourceId(): Int {
+        return R.layout.activity_with_drawer
     }
 
     override fun onDestroy() {

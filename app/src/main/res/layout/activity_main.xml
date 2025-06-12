@@ -1,102 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.drawerlayout.widget.DrawerLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/drawer_layout"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
 
-    <!-- Main content -->
+<!-- Main content -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- OpenStreetMap MapView from osmdroid -->
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Horizontal layout for the tracking info -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
 
-        <!-- Top app bar with title and hamburger button -->
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-
-            android:title="My App"
-            app:navigationIcon="@drawable/ic_menu"/>
-        <!-- android:background="?attr/colorPrimary" -->
-
-        <!-- OpenStreetMap MapView from osmdroid -->
-        <org.osmdroid.views.MapView
-            android:id="@+id/mapView"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <!-- Horizontal layout for the tracking info -->
-        <LinearLayout
-            android:layout_width="match_parent"
+        <!-- Time duration TextView on the left -->
+        <TextView
+            android:id="@+id/tvTime"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_weight="1"
+            android:padding="8dp"
+            android:gravity="center"
+            android:text="Time: 00:00:00"
+            android:textSize="16sp" />
 
-            <!-- Time duration TextView on the left -->
-            <TextView
-                android:id="@+id/tvTime"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:gravity="center"
-                android:text="Time: 00:00:00"
-                android:textSize="16sp" />
-
-            <!-- Total distance travelled TextView on the right -->
-            <TextView
-                android:id="@+id/tvDistance"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:padding="8dp"
-                android:gravity="center"
-                android:text="Distance: 0.00 km"
-                android:textSize="16sp" />
-        </LinearLayout>
-
-        <!-- Initially only start button -->
-        <Button
-            android:id="@+id/startButton"
-            android:layout_width="match_parent"
+        <!-- Total distance travelled TextView on the right -->
+        <TextView
+            android:id="@+id/tvDistance"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="START" />
-
-        <!-- Horizontal layout for PAUSE/RESUME and STOP buttons -->
-        <LinearLayout
-            android:id="@+id/pauseStopBar"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:visibility="gone"
-            android:layout_marginTop="16dp">
-
-            <Button
-                android:id="@+id/pauseResumeButton"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:text="PAUSE" />
-
-            <Button
-                android:id="@+id/stopButton"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="wrap_content"
-                android:text="STOP" />
-        </LinearLayout>
+            android:layout_weight="1"
+            android:padding="8dp"
+            android:gravity="center"
+            android:text="Distance: 0.00 km"
+            android:textSize="16sp" />
     </LinearLayout>
 
-    <!-- Navigation Drawer (side bar) -->
-    <com.google.android.material.navigation.NavigationView
-        android:id="@+id/nav_view"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        app:menu="@menu/drawer_menu"
-        app:headerLayout="@layout/nav_header"
-        android:layout_gravity="start"/>
+    <!-- Initially only start button -->
+    <Button
+        android:id="@+id/startButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="START" />
 
-</androidx.drawerlayout.widget.DrawerLayout>
+    <!-- Horizontal layout for PAUSE/RESUME and STOP buttons -->
+    <LinearLayout
+        android:id="@+id/pauseStopBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        android:layout_marginTop="16dp">
+
+        <Button
+            android:id="@+id/pauseResumeButton"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="PAUSE" />
+
+        <Button
+            android:id="@+id/stopButton"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="STOP" />
+    </LinearLayout>
+</LinearLayout>

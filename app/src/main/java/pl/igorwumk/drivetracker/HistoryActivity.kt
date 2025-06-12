@@ -10,15 +10,23 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class HistoryActivity : AppCompatActivity() {
+class HistoryActivity : BaseDrawerActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: TrackingSessionAdapter
     private lateinit var database: TrackingDatabase
 
+    override fun getLayoutResourceId(): Int {
+        return R.layout.activity_with_drawer
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_history)
+
+        //setContentView(R.layout.activity_history)
+        // Inflate the view
+        layoutInflater.inflate(R.layout.activity_history, findViewById(R.id.content_frame), true)
+
         recyclerView = findViewById(R.id.recycler_view_sessions)
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = TrackingSessionAdapter { session ->
