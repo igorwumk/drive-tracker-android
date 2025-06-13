@@ -21,6 +21,12 @@ interface TrackingSessionDao {
     @Query("SELECT * FROM tracking_sessions WHERE sessionId = :sessionId")
     suspend fun getSessionWithSegments(sessionId: Long): TrackingSessionWithSegments?
 
-    @Query("UPDATE tracking_sessions SET isSynced = :syncStatus WHERE sessionId = :sessionId")
-    suspend fun updateSyncStatus(sessionId: Long, syncStatus: Boolean)
+    @Query("UPDATE tracking_sessions SET status = :newStatus WHERE sessionId = :sessionId")
+    suspend fun updateSyncStatus(sessionId: Long, newStatus: String)
+
+    // Convenience methods
+    suspend fun markSynced(sessionId: Long) = updateSyncStatus(sessionId, "synced")
+    suspend fun markSyncPending(sessionId: Long) = updateSyncStatus(sessionId, "syncPending")
+    suspend fun markDeletePending(sessionId: Long) = updateSyncStatus(sessionId, "deletePending")
+    suspend fun markDeleted(sessionId: Long) = updateSyncStatus(sessionId, "deleted")
 }

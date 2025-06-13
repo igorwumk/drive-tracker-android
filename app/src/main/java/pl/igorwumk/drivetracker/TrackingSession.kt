@@ -1,5 +1,6 @@
 package pl.igorwumk.drivetracker
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -12,5 +13,6 @@ data class TrackingSession(
     val totalTime: Long,        // In seconds
     val timezone: String,
     val locale: String,
-    val isSynced: Boolean = false // New sessions not synced by default
+    @ColumnInfo(defaultValue = "syncPending")
+    val status: String = "syncPending" // New sessions not synced by default
 )
