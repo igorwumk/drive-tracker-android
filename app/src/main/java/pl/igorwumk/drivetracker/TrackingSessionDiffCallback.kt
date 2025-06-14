@@ -1,6 +1,7 @@
 package pl.igorwumk.drivetracker
 
 import androidx.recyclerview.widget.DiffUtil
+import pl.igorwumk.drivetracker.database.entity.TrackingSession
 
 class TrackingSessionDiffCallback: DiffUtil.ItemCallback<TrackingSession>() {
     override fun areItemsTheSame(oldItem: TrackingSession, newItem: TrackingSession): Boolean {

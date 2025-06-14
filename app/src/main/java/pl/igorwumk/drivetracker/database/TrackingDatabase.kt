@@ -1,4 +1,4 @@
-package pl.igorwumk.drivetracker
+package pl.igorwumk.drivetracker.database
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -8,6 +8,12 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import pl.igorwumk.drivetracker.database.entity.TrackingPoint
+import pl.igorwumk.drivetracker.database.dao.TrackingPointDao
+import pl.igorwumk.drivetracker.database.entity.TrackingSegment
+import pl.igorwumk.drivetracker.database.dao.TrackingSegmentDao
+import pl.igorwumk.drivetracker.database.entity.TrackingSession
+import pl.igorwumk.drivetracker.database.dao.TrackingSessionDao
 
 @Database(
     entities = [TrackingSession::class, TrackingSegment::class, TrackingPoint::class],

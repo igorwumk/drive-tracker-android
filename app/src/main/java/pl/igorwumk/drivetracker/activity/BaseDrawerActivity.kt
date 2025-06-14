@@ -1,4 +1,4 @@
-package pl.igorwumk.drivetracker
+package pl.igorwumk.drivetracker.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
+import pl.igorwumk.drivetracker.R
 
 abstract class BaseDrawerActivity : AppCompatActivity() {
     protected lateinit var drawerLayout: DrawerLayout

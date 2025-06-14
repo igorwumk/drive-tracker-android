@@ -1,4 +1,4 @@
-package pl.igorwumk.drivetracker
+package pl.igorwumk.drivetracker.activity
 
 import android.graphics.Color
 import android.net.Uri
@@ -19,6 +19,10 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Polyline
+import pl.igorwumk.drivetracker.R
+import pl.igorwumk.drivetracker.database.TrackingDatabase
+import pl.igorwumk.drivetracker.TrackingSegmentWithPoints
+import pl.igorwumk.drivetracker.service.TrackingService
 import java.util.Date
 
 class TrackingDetailActivity : AppCompatActivity() {

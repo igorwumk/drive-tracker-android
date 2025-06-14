@@ -1,4 +1,4 @@
-package pl.igorwumk.drivetracker
+package pl.igorwumk.drivetracker.activity
 
 import android.Manifest
 import android.app.NotificationChannel
@@ -20,15 +20,10 @@ import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.app.ActionBarDrawerToggle
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import com.google.android.material.navigation.NavigationView
 import org.osmdroid.api.IMapController
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -37,6 +32,8 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import pl.igorwumk.drivetracker.R
+import pl.igorwumk.drivetracker.service.TrackingService
 
 interface PermissionRequestCallback {
     fun requestTrackingPermission()

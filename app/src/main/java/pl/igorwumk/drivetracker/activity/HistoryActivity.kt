@@ -1,14 +1,16 @@
-package pl.igorwumk.drivetracker
+package pl.igorwumk.drivetracker.activity
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import pl.igorwumk.drivetracker.R
+import pl.igorwumk.drivetracker.database.TrackingDatabase
+import pl.igorwumk.drivetracker.TrackingSessionAdapter
 
 class HistoryActivity : BaseDrawerActivity() {
 

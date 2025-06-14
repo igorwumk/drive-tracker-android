@@ -19,7 +19,7 @@
         android:theme="@style/Theme.DriveTracker"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name=".activity.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:launchMode="singleTop"
@@ -31,14 +31,14 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".HistoryActivity"
+            android:name=".activity.HistoryActivity"
             android:label="History" />
         <activity
-            android:name=".TrackingDetailActivity"
+            android:name=".activity.TrackingDetailActivity"
             android:label="Tracking Details" />
 
         <service
-            android:name=".TrackingService"
+            android:name=".service.TrackingService"
             android:exported="false"
             android:foregroundServiceType="location" />
 

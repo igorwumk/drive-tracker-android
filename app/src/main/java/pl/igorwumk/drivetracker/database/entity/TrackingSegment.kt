@@ -1,4 +1,4 @@
-package pl.igorwumk.drivetracker
+package pl.igorwumk.drivetracker.database.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey

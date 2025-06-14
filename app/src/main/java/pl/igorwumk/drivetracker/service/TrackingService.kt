@@ -1,10 +1,8 @@
-package pl.igorwumk.drivetracker
+package pl.igorwumk.drivetracker.service
 
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
@@ -28,11 +26,17 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import pl.igorwumk.drivetracker.R
+import pl.igorwumk.drivetracker.TrackingSessionWithSegments
+import pl.igorwumk.drivetracker.activity.MainActivity
+import pl.igorwumk.drivetracker.activity.PermissionRequestCallback
+import pl.igorwumk.drivetracker.database.TrackingDatabase
+import pl.igorwumk.drivetracker.database.entity.TrackingPoint
+import pl.igorwumk.drivetracker.database.entity.TrackingSegment
+import pl.igorwumk.drivetracker.database.entity.TrackingSession
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date

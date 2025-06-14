@@ -1,4 +1,4 @@
-package pl.igorwumk.drivetracker
+package pl.igorwumk.drivetracker.database.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity

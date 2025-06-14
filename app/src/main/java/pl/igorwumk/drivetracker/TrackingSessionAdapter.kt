@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import pl.igorwumk.drivetracker.database.entity.TrackingSession
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
