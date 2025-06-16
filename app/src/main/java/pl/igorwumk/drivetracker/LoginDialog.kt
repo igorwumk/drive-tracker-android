@@ -19,7 +19,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class LoginDialog(context: Context) : DialogFragment() {
+class LoginDialog() : DialogFragment() {
     private lateinit var authService: APIService
     private val prefs by lazy { EncryptedPrefs.get(requireContext()) }
 

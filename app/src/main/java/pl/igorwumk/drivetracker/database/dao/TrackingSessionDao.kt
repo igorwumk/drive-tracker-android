@@ -19,6 +19,9 @@ interface TrackingSessionDao {
     @Query("SELECT * FROM tracking_sessions ORDER BY startTime DESC")
     suspend fun getAllSessions(): List<TrackingSession>
 
+    @Query("SELECT * FROM tracking_sessions WHERE status = :status")
+    suspend fun getAllByStatus(status: String): List<TrackingSession>
+
     @Transaction
     @Query("SELECT * FROM tracking_sessions WHERE sessionId = :sessionId")
     suspend fun getSessionWithSegments(sessionId: Long): TrackingSessionWithSegments?
@@ -28,6 +31,15 @@ interface TrackingSessionDao {
 
     @Query("UPDATE tracking_sessions SET status = 'desynced' WHERE status = 'synced'")
     suspend fun markAllSyncedAsDesynced()
+
+    @Query("""
+        SELECT * FROM tracking_sessions
+        WHERE startTime = :startTime
+        AND totalDistance = :totalDistance
+        AND totalTime = :totalTime
+        AND timezone = :timezone
+    """)
+    suspend fun findByUniqueness(startTime: Long, totalDistance: Double, totalTime: Long, timezone: String): TrackingSession?
 
     // Convenience methods
     suspend fun markSynced(sessionId: Long) = updateSyncStatus(sessionId, "synced")

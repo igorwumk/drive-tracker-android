@@ -60,7 +60,7 @@ class RegisterDialog(context: Context) : DialogFragment() {
                                     if (resp.isSuccessful) {
                                         Toast.makeText(context, "Registered OK", Toast.LENGTH_SHORT).show()
                                         dismiss()
-                                        LoginDialog(context).show(parentFragmentManager,"LoginDialog")
+                                        LoginDialog().show(parentFragmentManager,"LoginDialog")
                                     } else {
                                         showError("Register failed: ${resp.code()}")
                                     }

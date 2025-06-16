@@ -17,6 +17,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.preference.PreferenceManager
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -24,12 +25,18 @@ import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import androidx.security.crypto.MasterKeys
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.osmdroid.api.IMapController
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -40,8 +47,17 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import pl.igorwumk.drivetracker.LoginDialog
 import pl.igorwumk.drivetracker.R
+import pl.igorwumk.drivetracker.TrackingSessionWithSegments
 import pl.igorwumk.drivetracker.api.APIService
+import pl.igorwumk.drivetracker.api.FullTrackingSessionDto
 import pl.igorwumk.drivetracker.api.RetrofitClient
+import pl.igorwumk.drivetracker.api.TrackingPointUploadDto
+import pl.igorwumk.drivetracker.api.TrackingSegmentUploadDto
+import pl.igorwumk.drivetracker.api.TrackingSessionUploadDto
+import pl.igorwumk.drivetracker.database.TrackingDatabase
+import pl.igorwumk.drivetracker.database.entity.TrackingPoint
+import pl.igorwumk.drivetracker.database.entity.TrackingSegment
+import pl.igorwumk.drivetracker.database.entity.TrackingSession
 import pl.igorwumk.drivetracker.service.TrackingService
 
 interface PermissionRequestCallback {
@@ -254,15 +270,147 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
         val token = prefs.getToken()
         if (token.isNullOrEmpty()) {
             // no token - show login dialog
-            LoginDialog(this).show(supportFragmentManager, "LoginDialog")
+            LoginDialog().show(supportFragmentManager, "LoginDialog")
         } else {
             doSyncWithServer(token)
         }
     }
 
-    fun doSyncWithServer(token: String) {
-        // TODO: replace with real sync
-        Toast.makeText(this, "Sync logic goes here", Toast.LENGTH_SHORT).show()
+    fun doSyncWithServer(token: String) = lifecycleScope.launch {
+        val auth = "Token $token"
+        val db = TrackingDatabase.getDatabase(this@MainActivity)
+        val dao = db.sessionDao()
+        val api = RetrofitClient.instance.create(APIService::class.java)
+
+        // reset counters and inflate dialog
+        RetrofitClient.TrafficStats.reset()
+        val dlgView = layoutInflater.inflate(R.layout.dialog_sync_traffic, null)
+        val tvSent = dlgView.findViewById<TextView>(R.id.tv_sync_sent)
+        val tvRec = dlgView.findViewById<TextView>(R.id.tv_sync_received)
+        val dialog = AlertDialog.Builder(this@MainActivity)
+            .setTitle("Sync in progress")
+            .setView(dlgView)
+            .setCancelable(false)
+            .show()
+        suspend fun updateTrafficUI() = withContext(Dispatchers.Main) {
+            tvSent.text = "Sent: ${RetrofitClient.TrafficStats.bytesSent / 1024} kB"
+            tvRec.text = "Received: ${RetrofitClient.TrafficStats.bytesReceived / 1024} kB"
+        }
+
+        try {
+            // Fetch shallow list
+            val listResp = api.listTrackings(auth)
+            updateTrafficUI()
+            if (listResp.code() == 401) { LoginDialog().show(supportFragmentManager, "Login"); return@launch }
+            val remoteList = listResp.body() ?: emptyList()
+
+            // Load all sessions into memory
+            val localAll = dao.getAllSessions()
+            val toDelete = mutableListOf<Pair<Long, Long>>() // remoteId + localSessionId
+
+            // Process each remote session
+            for (remote in remoteList) {
+                val local = dao.findByUniqueness(remote.startTime, remote.totalDistance, remote.totalTime, remote.timezone)
+                if (local == null) {
+                    // new session - download in full
+                    val detail = api.getTrackingDetail(remote.id, auth)
+                    updateTrafficUI()
+                    if (detail.code() == 401) { LoginDialog().show(supportFragmentManager, "Login"); return@launch }
+                    detail.body()?.let { full ->
+                        // convert and insert into Room database
+                        val localId = saveFullRemote(full, db)
+                        dao.markSynced(localId)
+                    }
+                } else {
+                    // already exists in Room database, check status
+                    when (local.status) {
+                        "desynced" -> dao.markSynced(local.sessionId)
+                        "deletePending" -> toDelete += remote.id to local.sessionId
+                        "synced" -> { /* all good */ }
+                        "syncPending" -> {
+                            // unexpected state - set synced and warning to logcat
+                            if (local.locale == remote.locale) {
+                                dao.markSynced(local.sessionId)
+                            }
+                            Log.w("Sync", "Unexpected syncPending for session ${remote.id}" +
+                                if (local.locale != remote.locale)
+                                " (local=${local.locale}, remote=${remote.locale}" else ""
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Delete on server and mark deleted locally
+            toDelete.forEach { (remoteId, localId) ->
+                val del = api.deleteTracking(remoteId, auth)
+                updateTrafficUI()
+                if (del.code() == 401) { LoginDialog().show(supportFragmentManager, "Login"); return@launch }
+                if (del.isSuccessful) dao.markDeleted(localId)
+            }
+
+            // Upload local syncPending and desynced sessions
+            val pending = dao.getAllByStatus("syncPending") + dao.getAllByStatus("desynced")
+            for (local in pending) {
+                val full = db.sessionDao().getSessionWithSegments(local.sessionId)
+                val upload = full!!.toUploadDto() // map to TrackingSessionUploadDto
+                val resp = api.createTracking(upload, auth)
+                updateTrafficUI()
+                if (resp.code() == 401) { LoginDialog().show(supportFragmentManager, "Login"); return@launch }
+                if (resp.isSuccessful) dao.markSynced(local.sessionId)
+            }
+
+            Toast.makeText(this@MainActivity, "Sync complete", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this@MainActivity, "Sync error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+        } finally {
+            dialog.dismiss()
+        }
+    }
+
+    suspend fun saveFullRemote(full: FullTrackingSessionDto, db: TrackingDatabase): Long {
+        // insert session
+        val session = TrackingSession(
+            startTime = full.startTime,
+            totalDistance = full.totalDistance,
+            totalTime = full.totalTime,
+            timezone = full.timezone,
+            locale = full.locale,
+            status = "synced"
+        )
+        val id = db.sessionDao().insertSession(session)
+        // insert segments and points
+        full.segments.forEach { segDto ->
+            val seg = TrackingSegment(sessionId = id, segmentOrder = segDto.segmentOrder)
+            val segId = db.segmentDao().insertSegment(seg)
+            val pts = segDto.points.map { TrackingPoint(
+                segmentId = segId,
+                latitude = it.latitude,
+                longitude = it.longitude,
+                timestamp = it.timestamp,
+                pointOrder = it.pointOrder
+            ) }
+            db.pointDao().insertPoints(pts)
+        }
+        return id
+    }
+
+    fun TrackingSessionWithSegments.toUploadDto(): TrackingSessionUploadDto {
+        return TrackingSessionUploadDto(
+            startTime = session.startTime,
+            totalDistance = session.totalDistance,
+            totalTime = session.totalTime,
+            timezone = session.timezone,
+            locale = session.locale,
+            segments = segments.map { seg ->
+                TrackingSegmentUploadDto(
+                    points = seg.points.map { pt ->
+                        TrackingPointUploadDto(pt.latitude, pt.longitude, pt.timestamp, pt.pointOrder)
+                    },
+                    segmentOrder = seg.segment.segmentOrder
+                )
+            }
+        )
     }
 
     private fun bindToTrackingService() {
@@ -377,9 +525,11 @@ object EncryptedPrefs {
     private const val KEY_USERNAME = "user_name"
 
     fun get(context: Context): SharedPrefs {
-        val masterKey = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
         val sp = EncryptedSharedPreferences.create(
-            NAME, masterKey, context,
+            context, NAME, masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
