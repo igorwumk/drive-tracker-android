@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
+    implementation(libs.androidx.security.crypto.ktx)
     //implementation(libs.androidx.room.common.jvm)
     //implementation(libs.androidx.room.runtime.android)
     testImplementation(libs.junit)
@@ -75,4 +76,9 @@ dependencies {
     implementation("androidx.room:room-runtime:$roomVersion")
     kapt("androidx.room:room-compiler:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
+
+    // API
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    //implementation(libs.okhttp)
 }

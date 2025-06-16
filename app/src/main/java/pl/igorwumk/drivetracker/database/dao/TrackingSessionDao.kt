@@ -26,6 +26,9 @@ interface TrackingSessionDao {
     @Query("UPDATE tracking_sessions SET status = :newStatus WHERE sessionId = :sessionId")
     suspend fun updateSyncStatus(sessionId: Long, newStatus: String)
 
+    @Query("UPDATE tracking_sessions SET status = 'desynced' WHERE status = 'synced'")
+    suspend fun markAllSyncedAsDesynced()
+
     // Convenience methods
     suspend fun markSynced(sessionId: Long) = updateSyncStatus(sessionId, "synced")
     suspend fun markSyncPending(sessionId: Long) = updateSyncStatus(sessionId, "syncPending")

@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Location
@@ -16,12 +17,17 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.preference.PreferenceManager
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKeys
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import org.osmdroid.api.IMapController
@@ -32,7 +38,10 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import pl.igorwumk.drivetracker.LoginDialog
 import pl.igorwumk.drivetracker.R
+import pl.igorwumk.drivetracker.api.APIService
+import pl.igorwumk.drivetracker.api.RetrofitClient
 import pl.igorwumk.drivetracker.service.TrackingService
 
 interface PermissionRequestCallback {
@@ -49,6 +58,10 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
     private lateinit var stopButton: Button
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var myLocationOverlay: MyLocationNewOverlay
+
+    // DRF communication and auth
+    private lateinit var authService: APIService
+    private val prefs by lazy { EncryptedPrefs.get(this) }
 
     // Service variables
     private var trackingService: TrackingService? = null
@@ -187,6 +200,9 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
             //unbindService(serviceConnection)
             updateUIForTrackingStopped()
         }
+
+        // Retrofit setup for API
+        authService = RetrofitClient.instance.create(APIService::class.java)
     }
 
     override fun getLayoutResourceId(): Int {
@@ -216,6 +232,37 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
             serviceBound = false
         }
         uiUpdateHandler.removeCallbacks(uiUpdateRunnable)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        //return super.onCreateOptionsMenu(menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item. itemId) {
+            R.id.action_sync -> {
+                onSyncClicked()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun onSyncClicked() {
+        val token = prefs.getToken()
+        if (token.isNullOrEmpty()) {
+            // no token - show login dialog
+            LoginDialog(this).show(supportFragmentManager, "LoginDialog")
+        } else {
+            doSyncWithServer(token)
+        }
+    }
+
+    fun doSyncWithServer(token: String) {
+        // TODO: replace with real sync
+        Toast.makeText(this, "Sync logic goes here", Toast.LENGTH_SHORT).show()
     }
 
     private fun bindToTrackingService() {
@@ -320,6 +367,39 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
                 arrayOf(Manifest.permission.POST_NOTIFICATIONS),
                 1
             )
+        }
+    }
+}
+
+object EncryptedPrefs {
+    private const val NAME = "secure_prefs"
+    private const val KEY_TOKEN = "user_token"
+    private const val KEY_USERNAME = "user_name"
+
+    fun get(context: Context): SharedPrefs {
+        val masterKey = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        val sp = EncryptedSharedPreferences.create(
+            NAME, masterKey, context,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+        return SharedPrefs(sp)
+    }
+
+    class SharedPrefs(private val sp: SharedPreferences) {
+        fun saveCredentials(username: String, token: String) {
+            sp.edit()
+                .putString(KEY_USERNAME, username)
+                .putString(KEY_TOKEN, token)
+                .apply()
+        }
+        fun getToken(): String? = sp.getString(KEY_TOKEN, null)
+        fun getUsername(): String? = sp.getString(KEY_USERNAME, null)
+        fun clearCredentials() {
+            sp.edit()
+                .remove(KEY_USERNAME)
+                .remove(KEY_TOKEN)
+                .apply()
         }
     }
 }
