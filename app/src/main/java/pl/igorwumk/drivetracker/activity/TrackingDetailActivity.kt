@@ -8,6 +8,7 @@ import android.view.MenuItem
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
@@ -22,6 +23,8 @@ import org.osmdroid.views.overlay.Polyline
 import pl.igorwumk.drivetracker.R
 import pl.igorwumk.drivetracker.database.TrackingDatabase
 import pl.igorwumk.drivetracker.TrackingSegmentWithPoints
+import pl.igorwumk.drivetracker.database.dao.TrackingSessionDao
+import pl.igorwumk.drivetracker.database.entity.TrackingSession
 import pl.igorwumk.drivetracker.service.TrackingService
 import java.util.Date
 
@@ -37,11 +40,15 @@ class TrackingDetailActivity : AppCompatActivity() {
         uri?.let { persistGPXToURI(it) }
     }
 
+    private lateinit var dao: TrackingSessionDao
     private var sessionId: Long = -1
+    private lateinit var session: TrackingSession
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_tracking_detail)
+
+        dao = TrackingDatabase.getDatabase(this).sessionDao()
 
         toolbar = findViewById(R.id.tracking_detail_toolbar)
         mapView = findViewById(R.id.details_map_view)
@@ -62,6 +69,7 @@ class TrackingDetailActivity : AppCompatActivity() {
 
         // Load session details
         GlobalScope.launch(Dispatchers.IO) {
+            session = dao.getSession(sessionId)!!
             val sessionWithSegments = database.sessionDao().getSessionWithSegments(sessionId)
             sessionWithSegments?.let { sessionData ->
                 withContext(Dispatchers.Main) {
@@ -87,6 +95,10 @@ class TrackingDetailActivity : AppCompatActivity() {
                 // Launch SAF create-document prompt
                 val defaultName = "track_${sessionId}.gpx"
                 createDocument.launch(defaultName)
+                true
+            }
+            R.id.action_delete -> {
+                confirmDelete()
                 true
             }
             android.R.id.home -> {
@@ -115,6 +127,28 @@ class TrackingDetailActivity : AppCompatActivity() {
                     Toast.makeText(this@TrackingDetailActivity, "Export failed", Toast.LENGTH_LONG).show()
                 }
             }
+        }
+    }
+
+    private fun confirmDelete() {
+        AlertDialog.Builder(this)
+            .setTitle("Delete Session")
+            .setMessage("Are you sure?")
+            .setNegativeButton("No", null)
+            .setPositiveButton("Yes") { _, _ -> applyDeletion() }
+            .show()
+    }
+
+    private fun applyDeletion() = lifecycleScope.launch(Dispatchers.IO) {
+        val newStatus = if (session.status == "syncPending") {
+            "deleted"
+        } else {
+            "deletePending"
+        }
+        dao.updateSyncStatus(sessionId, newStatus)
+        withContext(Dispatchers.Main) {
+            Toast.makeText(this@TrackingDetailActivity, "Session deleted", Toast.LENGTH_SHORT).show()
+            finish()
         }
     }
 

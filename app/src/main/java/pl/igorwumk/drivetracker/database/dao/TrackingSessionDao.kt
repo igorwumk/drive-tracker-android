@@ -1,5 +1,6 @@
 package pl.igorwumk.drivetracker.database.dao
 
+import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
@@ -18,6 +19,13 @@ interface TrackingSessionDao {
 
     @Query("SELECT * FROM tracking_sessions ORDER BY startTime DESC")
     suspend fun getAllSessions(): List<TrackingSession>
+
+    @Query("""
+    SELECT * FROM tracking_sessions
+    WHERE status NOT IN ('deleted','deletePending')
+    ORDER BY startTime DESC
+  """)
+    fun getActiveSessions(): LiveData<List<TrackingSession>>
 
     @Query("SELECT * FROM tracking_sessions WHERE status = :status")
     suspend fun getAllByStatus(status: String): List<TrackingSession>

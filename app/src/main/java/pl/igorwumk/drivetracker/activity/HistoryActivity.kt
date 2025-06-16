@@ -2,6 +2,7 @@ package pl.igorwumk.drivetracker.activity
 
 import android.content.Intent
 import android.os.Bundle
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.Dispatchers
@@ -43,11 +44,9 @@ class HistoryActivity : BaseDrawerActivity() {
         database = TrackingDatabase.getDatabase(this)
 
         // Load sessions from database
-        GlobalScope.launch(Dispatchers.IO) {
-            val sessions = database.sessionDao().getAllSessions()
-            withContext(Dispatchers.Main) {
-                adapter.submitList(sessions)
-            }
+        database.sessionDao().getActiveSessions().observe(this) { list ->
+            adapter.submitList(list)
         }
+
     }
 }
