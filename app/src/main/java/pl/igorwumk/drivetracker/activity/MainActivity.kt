@@ -305,7 +305,7 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
             val remoteList = listResp.body() ?: emptyList()
 
             // Load all sessions into memory
-            val localAll = dao.getAllSessions()
+            //val localAll = dao.getAllSessions()
             val toDelete = mutableListOf<Pair<Long, Long>>() // remoteId + localSessionId
 
             // Process each remote session
@@ -360,10 +360,15 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
                 if (resp.isSuccessful) dao.markSynced(local.sessionId)
             }
 
+
             Toast.makeText(this@MainActivity, "Sync complete", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(this@MainActivity, "Sync error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
         } finally {
+            // purge local deleted sessions
+            withContext(Dispatchers.IO) {
+                dao.deleteByStatus("deleted")
+            }
             dialog.dismiss()
         }
     }

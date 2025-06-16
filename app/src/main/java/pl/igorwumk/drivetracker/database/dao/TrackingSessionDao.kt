@@ -32,6 +32,9 @@ interface TrackingSessionDao {
     @Query("UPDATE tracking_sessions SET status = 'desynced' WHERE status = 'synced'")
     suspend fun markAllSyncedAsDesynced()
 
+    @Query("DELETE FROM tracking_sessions WHERE status = :status")
+    suspend fun deleteByStatus(status: String): Int
+
     @Query("""
         SELECT * FROM tracking_sessions
         WHERE startTime = :startTime
