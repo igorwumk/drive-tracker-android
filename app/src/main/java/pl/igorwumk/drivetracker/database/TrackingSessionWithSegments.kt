@@ -1,4 +1,4 @@
-package pl.igorwumk.drivetracker
+package pl.igorwumk.drivetracker.database
 
 import androidx.room.Embedded
 import androidx.room.Relation

@@ -31,7 +31,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import androidx.security.crypto.MasterKeys
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.Dispatchers
@@ -47,7 +46,7 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import pl.igorwumk.drivetracker.LoginDialog
 import pl.igorwumk.drivetracker.R
-import pl.igorwumk.drivetracker.TrackingSessionWithSegments
+import pl.igorwumk.drivetracker.database.TrackingSessionWithSegments
 import pl.igorwumk.drivetracker.api.APIService
 import pl.igorwumk.drivetracker.api.FullTrackingSessionDto
 import pl.igorwumk.drivetracker.api.RetrofitClient

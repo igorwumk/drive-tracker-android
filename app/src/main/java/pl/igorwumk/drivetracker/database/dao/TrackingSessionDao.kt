@@ -5,7 +5,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Transaction
-import pl.igorwumk.drivetracker.TrackingSessionWithSegments
+import pl.igorwumk.drivetracker.database.TrackingSessionWithSegments
 import pl.igorwumk.drivetracker.database.entity.TrackingSession
 
 @Dao

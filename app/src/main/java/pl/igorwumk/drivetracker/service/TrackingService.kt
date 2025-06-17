@@ -30,7 +30,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import pl.igorwumk.drivetracker.R
-import pl.igorwumk.drivetracker.TrackingSessionWithSegments
+import pl.igorwumk.drivetracker.database.TrackingSessionWithSegments
 import pl.igorwumk.drivetracker.activity.MainActivity
 import pl.igorwumk.drivetracker.activity.PermissionRequestCallback
 import pl.igorwumk.drivetracker.database.TrackingDatabase
