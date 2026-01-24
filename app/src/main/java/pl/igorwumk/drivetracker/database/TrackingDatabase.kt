@@ -17,7 +17,7 @@ import pl.igorwumk.drivetracker.database.dao.TrackingSessionDao
 
 @Database(
     entities = [TrackingSession::class, TrackingSegment::class, TrackingPoint::class],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class TrackingDatabase : RoomDatabase() {
@@ -36,7 +36,7 @@ abstract class TrackingDatabase : RoomDatabase() {
                     context.applicationContext,
                     TrackingDatabase::class.java,
                     "tracking_database"
-                ).addMigrations(MIGRATION_1_2)
+                ).addMigrations(MIGRATION_1_2).addMigrations(MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance
@@ -106,5 +106,20 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
 
         // 6) Re‐enable foreign-key constraints
         db.execSQL("PRAGMA foreign_keys=ON;")
+    }
+}
+
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // Indexes for sessions
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_sessions_session ON tracking_sessions(sessionId);")
+        // Indexes for segments
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_segments_segment ON tracking_segments(segmentId);")
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_segments_session ON tracking_segments(sessionId);")
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_segments_order ON tracking_segments(segmentOrder);")
+        // Indexes for points
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_points_point ON tracking_points(pointId);")
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_points_segment ON tracking_points(segmentId);")
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_points_order ON tracking_points(pointOrder);")
     }
 }

@@ -2,9 +2,15 @@ package pl.igorwumk.drivetracker.database.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "tracking_sessions")
+@Entity(
+    tableName = "tracking_sessions",
+    indices = [
+        Index(value = ["sessionId"], name = "idx_sessions_session")
+    ]
+)
 data class TrackingSession(
     @PrimaryKey(autoGenerate = true)
     val sessionId: Long = 0,

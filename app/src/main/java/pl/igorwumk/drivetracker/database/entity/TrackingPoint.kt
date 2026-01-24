@@ -2,6 +2,7 @@ package pl.igorwumk.drivetracker.database.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
@@ -11,7 +12,12 @@ import androidx.room.PrimaryKey
         parentColumns = ["segmentId"],
         childColumns = ["segmentId"],
         onDelete = ForeignKey.CASCADE
-    )]
+    )],
+    indices = [
+        Index(value = ["pointId"], name = "idx_points_point"),
+        Index(value = ["segmentId"], name = "idx_points_segment"),
+        Index(value = ["pointOrder"], name = "idx_points_order")
+    ]
 )
 data class TrackingPoint(
     @PrimaryKey(autoGenerate = true)
