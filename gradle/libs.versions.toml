@@ -38,7 +38,7 @@ material = { group = "com.google.android.material", name = "material", version.r
 androidx-room-common-jvm = { group = "androidx.room", name = "room-common-jvm", version.ref = "roomCommonJvm" }
 androidx-room-runtime-jvm = { group = "androidx.room", name = "room-runtime-jvm", version.ref = "roomRuntimeJvm" }
 androidx-room-runtime-android = { group = "androidx.room", name = "room-runtime-android", version.ref = "roomRuntimeAndroid" }
-androidx-security-crypto-ktx = { group = "androidx.security", name = "security-crypto-ktx", version = "1.1.0-alpha05" }
+androidx-security-crypto-ktx = { group = "androidx.security", name = "security-crypto-ktx", version = "1.1.0" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
