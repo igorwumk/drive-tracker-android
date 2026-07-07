@@ -2,6 +2,7 @@ package pl.igorwumk.drivetracker.activity
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -48,5 +49,11 @@ class HistoryActivity : BaseDrawerActivity() {
             adapter.submitList(list)
         }
 
+    }
+
+    // Inflate options menu
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_history, menu)
+        return true
     }
 }
