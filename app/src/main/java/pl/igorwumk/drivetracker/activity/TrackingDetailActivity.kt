@@ -26,7 +26,9 @@ import pl.igorwumk.drivetracker.database.TrackingSegmentWithPoints
 import pl.igorwumk.drivetracker.database.dao.TrackingSessionDao
 import pl.igorwumk.drivetracker.database.entity.TrackingSession
 import pl.igorwumk.drivetracker.service.TrackingService
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 class TrackingDetailActivity : AppCompatActivity() {
     private lateinit var toolbar: Toolbar
@@ -43,6 +45,8 @@ class TrackingDetailActivity : AppCompatActivity() {
     private lateinit var dao: TrackingSessionDao
     private var sessionId: Long = -1
     private lateinit var session: TrackingSession
+
+    private var sessionStartTime: Long = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,6 +81,7 @@ class TrackingDetailActivity : AppCompatActivity() {
                         "Started: ${Date(sessionData.session.startTime)}\n" +
                         "Distance: ${sessionData.session.totalDistance} m\n" +
                         "Time: ${sessionData.session.totalTime} sec"
+                    sessionStartTime = sessionData.session.startTime
                     drawSegmentsOnMap(sessionData.segments)
                 }
             }
@@ -93,7 +98,7 @@ class TrackingDetailActivity : AppCompatActivity() {
         return when (item.itemId) {
             R.id.action_export_gpx -> {
                 // Launch SAF create-document prompt
-                val defaultName = "track_${sessionId}.gpx"
+                val defaultName = "track_${unixMilisToTimestamp(sessionStartTime)}.gpx"
                 createDocument.launch(defaultName)
                 true
             }
@@ -176,5 +181,11 @@ class TrackingDetailActivity : AppCompatActivity() {
             mapView.overlays.add(polyline)
         }
         mapView.invalidate()
+    }
+
+    fun unixMilisToTimestamp(milis: Long): String {
+        val date = Date(milis)
+        val formatter = SimpleDateFormat("yyyy-MM-dd HH-mm-ss", Locale.getDefault())
+        return formatter.format(date)
     }
 }
