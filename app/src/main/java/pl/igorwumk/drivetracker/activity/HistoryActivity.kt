@@ -112,11 +112,4 @@ class HistoryActivity : BaseDrawerActivity() {
             }
         }
     }
-
-    // TODO: dedup with TrackingDetailActivity
-    fun unixMilisToTimestamp(milis: Long): String {
-        val date = Date(milis)
-        val formatter = SimpleDateFormat("yyyy-MM-dd HH-mm-ss", Locale.getDefault())
-        return formatter.format(date)
-    }
 }

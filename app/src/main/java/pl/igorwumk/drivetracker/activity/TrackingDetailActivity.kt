@@ -182,10 +182,10 @@ class TrackingDetailActivity : AppCompatActivity() {
         }
         mapView.invalidate()
     }
+}
 
-    fun unixMilisToTimestamp(milis: Long): String {
-        val date = Date(milis)
-        val formatter = SimpleDateFormat("yyyy-MM-dd HH-mm-ss", Locale.getDefault())
-        return formatter.format(date)
-    }
+fun unixMilisToTimestamp(milis: Long): String {
+    val date = Date(milis)
+    val formatter = SimpleDateFormat("yyyy-MM-dd HH-mm-ss", Locale.getDefault())
+    return formatter.format(date)
 }
