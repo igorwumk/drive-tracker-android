@@ -20,6 +20,7 @@
     <string name="network_received_kilobytes_init">Received: 0 kB</string>
     <string name="tracking_elapsed_time">Time: %1$02d:%2$02d:%3$02d</string>
     <string name="tracking_distance_kilometers">Distance: %1$.2f km</string>
+    <string name="tracking_distance_meters">Distance: %1$.2f m</string>
     <string name="account_not_logged_in">Currently not logged in</string>
     <string name="account_logged_in_as">Logged in as %1$s</string>
     <string name="account_logging_out">Logging out…</string>
@@ -34,4 +35,6 @@
     <string name="account_username_hint">Username</string>
     <string name="account_password_hint">Password</string>
     <string name="account_password_confirm_hint">Confirm Password</string>
+    <string name="export_success_zip">ZIP exported successfully</string>
+    <string name="export_failed">Export failed: %1$s</string>
 </resources>

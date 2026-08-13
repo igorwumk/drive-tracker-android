@@ -103,11 +103,11 @@ class HistoryActivity : BaseDrawerActivity() {
                     outputStream.write(zipOutputStream.toByteArray())
                 }
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@HistoryActivity, "ZIP exported successfully", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@HistoryActivity, R.string.export_success_zip, Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@HistoryActivity, "Export failed", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@HistoryActivity, getString(R.string.export_failed, e.localizedMessage), Toast.LENGTH_LONG).show()
                 }
             }
         }
