@@ -13,7 +13,7 @@
 
     <Button
         android:id="@+id/btn_logout"
-        android:text="Logout"
+        android:text="@string/button_logout"
         android:visibility="gone"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
