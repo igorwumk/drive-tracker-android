@@ -7,13 +7,13 @@
 
     <TextView
         android:id="@+id/tv_sync_sent"
-        android:text="Sent: 0 kB"
+        android:text="@string/network_sent_kilobytes_init"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
     <TextView
         android:id="@+id/tv_sync_received"
-        android:text="Received: 0 kB"
+        android:text="@string/network_received_kilobytes_init"
         android:layout_marginTop="8dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />

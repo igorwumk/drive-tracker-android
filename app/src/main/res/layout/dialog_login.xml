@@ -8,14 +8,14 @@
 
     <EditText
         android:id="@+id/et_username"
-        android:hint="Username"
+        android:hint="@string/account_username_hint"
         android:inputType="text"
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
     <EditText
         android:id="@+id/et_password"
-        android:hint="Password"
+        android:hint="@string/account_password_hint"
         android:inputType="textPassword"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -30,14 +30,14 @@
 
         <Button
             android:id="@+id/btn_register"
-            android:text="Register"
+            android:text="@string/button_register"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1" />
 
         <Button
             android:id="@+id/btn_login"
-            android:text="Login"
+            android:text="@string/button_login"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1" />

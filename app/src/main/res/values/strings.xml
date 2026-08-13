@@ -1,17 +1,23 @@
 <resources>
     <string name="app_name">Drive Tracker</string>
+    <string name="tracking_channel_name">Tracking Channel</string>
+    <string name="tracking_channel_description">Channel for tracking notifications</string>
     <string name="navigation_drawer_open">Open</string>
     <string name="navigation_drawer_close">Close</string>
     <string name="button_start">START</string>
     <string name="button_pause">PAUSE</string>
     <string name="button_resume">RESUME</string>
     <string name="button_stop">STOP</string>
+    <string name="button_login">Login</string>
     <string name="button_logout">Logout</string>
+    <string name="button_register">Register</string>
     <string name="button_cancel">Cancel</string>
     <string name="button_retry">Retry</string>
     <string name="button_delete_token">Remove token</string>
     <string name="network_sent_kilobytes">Sent: %1$d kB</string>
+    <string name="network_sent_kilobytes_init">Sent: 0 kB</string>
     <string name="network_received_kilobytes">Received: %1$d kB</string>
+    <string name="network_received_kilobytes_init">Received: 0 kB</string>
     <string name="tracking_elapsed_time">Time: %1$02d:%2$02d:%3$02d</string>
     <string name="tracking_distance_kilometers">Distance: %1$.2f km</string>
     <string name="account_not_logged_in">Currently not logged in</string>
@@ -21,4 +27,11 @@
     <string name="network_connection_failed">Connection failed: %1$s</string>
     <string name="account_logout_failed">Logout failed</string>
     <string name="account_logout_failed_verbose">Logout failed: HTTP %1$d - %2$s</string>
+    <string name="account_sync_in_progress">Sync in progress</string>
+    <string name="account_sync_complete">Sync complete</string>
+    <string name="account_sync_error">Sync error: %1$s</string>
+    <string name="account_email_hint">Email</string>
+    <string name="account_username_hint">Username</string>
+    <string name="account_password_hint">Password</string>
+    <string name="account_password_confirm_hint">Confirm Password</string>
 </resources>

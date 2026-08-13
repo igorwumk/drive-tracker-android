@@ -127,7 +127,7 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
                 startButton.visibility = View.GONE
                 findViewById<LinearLayout>(R.id.pauseStopBar).visibility = View.VISIBLE
                 // Update text of pause/resume button
-                pauseResumeButton.text = if (service.isPaused) "RESUME" else "PAUSE"
+                pauseResumeButton.text = if (service.isPaused) getString(R.string.button_resume) else getString(R.string.button_pause)
             } else {
                 // Not tracking -> show start button
                 startButton.visibility = View.VISIBLE
@@ -291,7 +291,7 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
         val tvSent = dlgView.findViewById<TextView>(R.id.tv_sync_sent)
         val tvRec = dlgView.findViewById<TextView>(R.id.tv_sync_received)
         val dialog = AlertDialog.Builder(this@MainActivity)
-            .setTitle("Sync in progress")
+            .setTitle(getString(R.string.account_sync_in_progress))
             .setView(dlgView)
             .setCancelable(false)
             .show()
@@ -364,9 +364,9 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
             }
 
 
-            Toast.makeText(this@MainActivity, "Sync complete", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@MainActivity, getString(R.string.account_sync_complete), Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Toast.makeText(this@MainActivity, "Sync error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this@MainActivity, getString(R.string.account_sync_error, e.localizedMessage), Toast.LENGTH_LONG).show()
         } finally {
             // purge local deleted sessions
             withContext(Dispatchers.IO) {
@@ -488,8 +488,8 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
 
     private fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Tracking Channel"
-            val descriptionText = "Channel for tracking notifications"
+            val name = getString(R.string.tracking_channel_name)
+            val descriptionText = getString(R.string.tracking_channel_description)
             val importance = NotificationManager.IMPORTANCE_LOW
             val channel = NotificationChannel(TrackingService.CHANNEL_ID, name, importance).apply {
                 description = descriptionText
