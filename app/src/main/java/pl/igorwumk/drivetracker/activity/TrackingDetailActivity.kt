@@ -77,10 +77,7 @@ class TrackingDetailActivity : AppCompatActivity() {
             val sessionWithSegments = database.sessionDao().getSessionWithSegments(sessionId)
             sessionWithSegments?.let { sessionData ->
                 withContext(Dispatchers.Main) {
-                    textViewDetails.text =
-                        "Started: ${Date(sessionData.session.startTime)}\n" +
-                        "Distance: ${sessionData.session.totalDistance} m\n" +
-                        "Time: ${sessionData.session.totalTime} sec"
+                    textViewDetails.text = getString(R.string.tracking_details, Date(sessionData.session.startTime), sessionData.session.totalDistance, sessionData.session.totalTime)
                     sessionStartTime = sessionData.session.startTime
                     drawSegmentsOnMap(sessionData.segments)
                 }
@@ -125,11 +122,11 @@ class TrackingDetailActivity : AppCompatActivity() {
                 }
                 // Notify user
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@TrackingDetailActivity, "GPX exported successfully", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@TrackingDetailActivity, R.string.export_success_zip, Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@TrackingDetailActivity, "Export failed", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@TrackingDetailActivity, getString(R.string.export_failed, e.localizedMessage), Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -137,10 +134,10 @@ class TrackingDetailActivity : AppCompatActivity() {
 
     private fun confirmDelete() {
         AlertDialog.Builder(this)
-            .setTitle("Delete Session")
-            .setMessage("Are you sure?")
-            .setNegativeButton("No", null)
-            .setPositiveButton("Yes") { _, _ -> applyDeletion() }
+            .setTitle(R.string.title_delete_session)
+            .setMessage(R.string.confirm_user_choice)
+            .setNegativeButton(R.string.modal_no, null)
+            .setPositiveButton(R.string.modal_yes) { _, _ -> applyDeletion() }
             .show()
     }
 
@@ -152,7 +149,7 @@ class TrackingDetailActivity : AppCompatActivity() {
         }
         dao.updateSyncStatus(sessionId, newStatus)
         withContext(Dispatchers.Main) {
-            Toast.makeText(this@TrackingDetailActivity, "Session deleted", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@TrackingDetailActivity, R.string.session_deleted, Toast.LENGTH_SHORT).show()
             finish()
         }
     }
