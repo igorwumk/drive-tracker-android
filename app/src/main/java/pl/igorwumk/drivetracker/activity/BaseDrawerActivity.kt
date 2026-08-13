@@ -101,10 +101,10 @@ abstract class BaseDrawerActivity : AppCompatActivity() {
     internal fun updateLoginHeader() {
         val username = prefs.getUsername()
         if (username.isNullOrEmpty()) {
-            tvLoginStatus.text = "Currently not logged in"
+            tvLoginStatus.setText(R.string.account_not_logged_in)
             btnLogout.visibility = View.GONE
         } else {
-            tvLoginStatus.text = "Logged in as $username"
+            tvLoginStatus.text = getString(R.string.account_logged_in_as, username)
             btnLogout.visibility = View.VISIBLE
         }
     }
