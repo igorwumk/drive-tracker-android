@@ -101,10 +101,10 @@ abstract class BaseDrawerActivity : AppCompatActivity() {
     internal fun updateLoginHeader() {
         val username = prefs.getUsername()
         if (username.isNullOrEmpty()) {
-            tvLoginStatus.text = "Currently not logged in"
+            tvLoginStatus.setText(R.string.account_not_logged_in)
             btnLogout.visibility = View.GONE
         } else {
-            tvLoginStatus.text = "Logged in as $username"
+            tvLoginStatus.text = getString(R.string.account_logged_in_as, username)
             btnLogout.visibility = View.VISIBLE
         }
     }
@@ -112,13 +112,13 @@ abstract class BaseDrawerActivity : AppCompatActivity() {
     private fun doLogout() {
         // show ProgressDialog
         val progress = ProgressDialog(this).apply {
-            setMessage("Logging out...")
+            setMessage(getString(R.string.account_logging_out))
             setCancelable(false)
             show()
         }
 
         val token = prefs.getToken()!!
-        authService.logout("Token $token").enqueue(object: Callback<ResponseBody> {
+        authService.logout("Token $token").enqueue(object: Callback<ResponseBody> { // HTTP request header - no i18n here
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 progress.dismiss()
                 if (response.isSuccessful) {
@@ -126,26 +126,26 @@ abstract class BaseDrawerActivity : AppCompatActivity() {
                     prefs.clearCredentials()
                     performPostLogoutCleanup()
                     updateLoginHeader()
-                    Toast.makeText(this@BaseDrawerActivity, "Logged out", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@BaseDrawerActivity, getString(R.string.account_logged_out), Toast.LENGTH_SHORT).show()
                 } else {
-                    showLogoutError("Logout failed: ${response.code()}")
+                    showLogoutError(getString(R.string.account_logout_failed_verbose, response.code(), response.message()))
                 }
             }
 
             override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                 progress.dismiss()
-                showLogoutError("Connection failed.")
+                showLogoutError(getString(R.string.network_connection_failed, t.localizedMessage))
             }
         })
     }
 
     private fun showLogoutError(msg: String) {
         AlertDialog.Builder(this)
-            .setTitle("Logout failed")
+            .setTitle(getString(R.string.account_logout_failed))
             .setMessage(msg)
-            .setNeutralButton("Cancel", null)
-            .setPositiveButton("Retry") {_, _ -> doLogout() }
-            .setNegativeButton("Remove token") { _, _ ->
+            .setNeutralButton(getString(R.string.button_cancel), null)
+            .setPositiveButton(getString(R.string.button_retry)) {_, _ -> doLogout() }
+            .setNegativeButton(getString(R.string.button_delete_token)) { _, _ ->
                 prefs.clearCredentials()
                 performPostLogoutCleanup()
                 updateLoginHeader()

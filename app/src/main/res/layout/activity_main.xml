@@ -29,7 +29,7 @@
             android:layout_weight="1"
             android:padding="8dp"
             android:gravity="center"
-            android:text="Time: 00:00:00"
+            android:text="@string/tracking_elapsed_time"
             android:textSize="16sp" />
 
         <!-- Total distance travelled TextView on the right -->
@@ -40,7 +40,7 @@
             android:layout_weight="1"
             android:padding="8dp"
             android:gravity="center"
-            android:text="Distance: 0.00 km"
+            android:text="@string/tracking_distance_kilometers"
             android:textSize="16sp" />
     </LinearLayout>
 
@@ -49,7 +49,7 @@
         android:id="@+id/startButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="START" />
+        android:text="@string/button_start" />
 
     <!-- Horizontal layout for PAUSE/RESUME and STOP buttons -->
     <LinearLayout
@@ -65,13 +65,13 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="PAUSE" />
+            android:text="@string/button_pause" />
 
         <Button
             android:id="@+id/stopButton"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:text="STOP" />
+            android:text="@string/button_stop" />
     </LinearLayout>
 </LinearLayout>

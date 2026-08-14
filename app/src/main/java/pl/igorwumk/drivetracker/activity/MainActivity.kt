@@ -127,7 +127,7 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
                 startButton.visibility = View.GONE
                 findViewById<LinearLayout>(R.id.pauseStopBar).visibility = View.VISIBLE
                 // Update text of pause/resume button
-                pauseResumeButton.text = if (service.isPaused) "RESUME" else "PAUSE"
+                pauseResumeButton.text = if (service.isPaused) getString(R.string.button_resume) else getString(R.string.button_pause)
             } else {
                 // Not tracking -> show start button
                 startButton.visibility = View.VISIBLE
@@ -168,6 +168,10 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
         pauseResumeButton = findViewById(R.id.pauseResumeButton)
         stopButton = findViewById(R.id.stopButton)
 
+        // Set UI text for param strings
+        tvTime.text = getString(R.string.tracking_elapsed_time, 0, 0, 0)
+        tvDistance.text = getString(R.string.tracking_distance_kilometers, 0.0)
+
         // At start only start button visible
         startButton.visibility = View.VISIBLE
 
@@ -196,14 +200,14 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
                         action = TrackingService.ACTION_RESUME
                     }
                     startService(resumeIntent)
-                    pauseResumeButton.text = "PAUSE"
+                    pauseResumeButton.setText(R.string.button_pause)
                 } else {
                     // Pause tracking
                     val pauseIntent = Intent(this, TrackingService::class.java).apply {
                         action = TrackingService.ACTION_PAUSE
                     }
                     startService(pauseIntent)
-                    pauseResumeButton.text = "RESUME"
+                    pauseResumeButton.setText(R.string.button_resume)
                 }
             }
         }
@@ -287,13 +291,13 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
         val tvSent = dlgView.findViewById<TextView>(R.id.tv_sync_sent)
         val tvRec = dlgView.findViewById<TextView>(R.id.tv_sync_received)
         val dialog = AlertDialog.Builder(this@MainActivity)
-            .setTitle("Sync in progress")
+            .setTitle(getString(R.string.account_sync_in_progress))
             .setView(dlgView)
             .setCancelable(false)
             .show()
         suspend fun updateTrafficUI() = withContext(Dispatchers.Main) {
-            tvSent.text = "Sent: ${RetrofitClient.TrafficStats.bytesSent / 1024} kB"
-            tvRec.text = "Received: ${RetrofitClient.TrafficStats.bytesReceived / 1024} kB"
+            tvSent.text = getString(R.string.network_sent_kilobytes, RetrofitClient.TrafficStats.bytesSent / 1024)
+            tvRec.text = getString(R.string.network_received_kilobytes, RetrofitClient.TrafficStats.bytesReceived / 1024)
         }
 
         try {
@@ -360,9 +364,9 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
             }
 
 
-            Toast.makeText(this@MainActivity, "Sync complete", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@MainActivity, getString(R.string.account_sync_complete), Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Toast.makeText(this@MainActivity, "Sync error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this@MainActivity, getString(R.string.account_sync_error, e.localizedMessage), Toast.LENGTH_LONG).show()
         } finally {
             // purge local deleted sessions
             withContext(Dispatchers.IO) {
@@ -427,7 +431,7 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
         startButton.visibility = View.GONE
         // Show pause/resume + stop buttons
         findViewById<LinearLayout>(R.id.pauseStopBar).visibility = View.VISIBLE
-        pauseResumeButton.text = "PAUSE"
+        pauseResumeButton.setText(R.string.button_pause)
     }
 
     private fun updateUIForTrackingStopped() {
@@ -454,13 +458,13 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
         val hours = (trackingDuration / 3600).toInt()
         val minutes = ((trackingDuration % 3600) / 60).toInt()
         val seconds = (trackingDuration % 60).toInt()
-        tvTime.text = String.format("Time: %02d:%02d:%02d", hours, minutes, seconds)
+        tvTime.text = getString(R.string.tracking_elapsed_time, hours, minutes, seconds)
     }
 
     // Format and update distance
     private fun updateDistanceTravelled(distanceInMeters: Double = 0.0) {
         val distanceKm = distanceInMeters / 1000.0
-        tvDistance.text = String.format("Distance: %.2f km", distanceKm)
+        tvDistance.text = getString(R.string.tracking_distance_kilometers, distanceKm)
     }
 
     // Draw the path on a map
@@ -484,8 +488,8 @@ class MainActivity : BaseDrawerActivity(), PermissionRequestCallback {
 
     private fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Tracking Channel"
-            val descriptionText = "Channel for tracking notifications"
+            val name = getString(R.string.tracking_channel_name)
+            val descriptionText = getString(R.string.tracking_channel_description)
             val importance = NotificationManager.IMPORTANCE_LOW
             val channel = NotificationChannel(TrackingService.CHANNEL_ID, name, importance).apply {
                 description = descriptionText

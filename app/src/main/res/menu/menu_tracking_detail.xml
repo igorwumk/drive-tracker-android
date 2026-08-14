@@ -5,9 +5,9 @@
 
     <item
         android:id="@+id/action_export_gpx"
-        android:title="Export to GPX" />
+        android:title="@string/button_export_gpx" />
 
     <item
         android:id="@+id/action_delete"
-        android:title="Delete" />
+        android:title="@string/button_delete" />
 </menu>

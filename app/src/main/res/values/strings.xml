@@ -1,5 +1,74 @@
 <resources>
     <string name="app_name">Drive Tracker</string>
-    <string name="navigation_drawer_open">NDO</string>
-    <string name="navigation_drawer_close">NDC</string>
+    <string name="tracking_channel_name">Tracking Channel</string>
+    <string name="tracking_channel_description">Channel for tracking notifications</string>
+    <string name="navigation_drawer_open">Open</string>
+    <string name="navigation_drawer_close">Close</string>
+    <string name="navigation_drawer_main">Main</string>
+    <string name="navigation_drawer_history">History</string>
+    <string name="button_start">START</string>
+    <string name="button_pause">PAUSE</string>
+    <string name="button_resume">RESUME</string>
+    <string name="button_stop">STOP</string>
+    <string name="button_login">Login</string>
+    <string name="button_logout">Logout</string>
+    <string name="button_register">Register</string>
+    <string name="button_cancel">Cancel</string>
+    <string name="button_retry">Retry</string>
+    <string name="button_delete_token">Remove token</string>
+    <string name="button_export_all">Export all</string>
+    <string name="button_export_gpx">Export to GPX</string>
+    <string name="button_delete">Delete</string>
+    <string name="button_sync_account">Sync</string>
+    <string name="network_sent_kilobytes">Sent: %1$d kB</string>
+    <string name="network_sent_kilobytes_init">Sent: 0 kB</string>
+    <string name="network_received_kilobytes">Received: %1$d kB</string>
+    <string name="network_received_kilobytes_init">Received: 0 kB</string>
+    <string name="tracking_started">Tracking started</string>
+    <string name="tracking_saved_to_db">Saved tracking session to database</string>
+    <string name="tracking_elapsed_time">Time: %1$02d:%2$02d:%3$02d</string>
+    <string name="tracking_distance_kilometers">Distance: %1$.2f km</string>
+    <string name="tracking_distance_meters">Distance: %1$.2f m</string>
+    <string name="tracking_details">
+        Started: %1$s\n
+        Distance: %2$.2f m\n
+        Time: %3$d sec
+    </string>
+    <string name="account_not_logged_in">Currently not logged in</string>
+    <string name="account_logged_in_as">Logged in as %1$s</string>
+    <string name="account_logging_in">Logging in…</string>
+    <string name="account_registering">Registering…</string>
+    <string name="account_registered">Successfully registered new account</string>
+    <string name="account_logging_out">Logging out…</string>
+    <string name="account_logged_out">Logged out</string>
+    <string name="network_connection_failed">Connection failed: %1$s</string>
+    <string name="account_login_failed_verbose">Login failed: HTTP %1$d - %2$s</string>
+    <string name="account_register_failed_verbose">Register failed: HTTP %1$d - %2$s</string>
+    <string name="account_logout_failed">Logout failed</string>
+    <string name="account_logout_failed_verbose">Logout failed: HTTP %1$d - %2$s</string>
+    <string name="account_sync_in_progress">Sync in progress</string>
+    <string name="account_sync_complete">Sync complete</string>
+    <string name="account_sync_error">Sync error: %1$s</string>
+    <string name="account_email_hint">Email</string>
+    <string name="account_username_hint">Username</string>
+    <string name="account_password_hint">Password</string>
+    <string name="account_password_confirm_hint">Confirm Password</string>
+    <string name="export_success_zip">ZIP exported successfully</string>
+    <string name="export_success_gpx">GPX exported successfully</string>
+    <string name="export_failed">Export failed: %1$s</string>
+    <string name="title_delete_session">Delete Session</string>
+    <string name="title_login">Login</string>
+    <string name="title_error">Error</string>
+    <string name="title_register">Register</string>
+    <string name="tracking_paused">Tracking Paused</string>
+    <string name="tracking_active">Tracking Active</string>
+    <string name="session_deleted">Session deleted</string>
+    <string name="confirm_user_choice">Are you sure?</string>
+    <string name="modal_no">No</string>
+    <string name="modal_yes">Yes</string>
+    <string name="modal_ok">OK</string>
+    <string name="error_field_required">Required</string>
+    <string name="error_all_fields_required">All fields required</string>
+    <string name="error_passwords_must_match">Passwords must match</string>
+    <string name="error_no_location_updates">No location updates received!</string>
 </resources>

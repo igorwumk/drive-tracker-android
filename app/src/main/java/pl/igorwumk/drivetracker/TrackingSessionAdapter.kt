@@ -39,13 +39,13 @@ class TrackingSessionAdapter(
             dateTextView.text = dateString
 
             // Format distance (assuming meters)
-            distanceTextView.text = "Distance: ${String.format("%.2f", session.totalDistance)} m"
+            distanceTextView.text = itemView.context.getString(R.string.tracking_distance_meters, session.totalDistance)
 
             // Format total time (assuming seconds)
             val hours = session.totalTime / 3600
             val minutes = (session.totalTime % 3600) / 60
             val seconds = session.totalTime % 60
-            timeTextView.text = String.format("Time: %02d:%02d:%02d", hours, minutes, seconds)
+            timeTextView.text = itemView.context.getString(R.string.tracking_elapsed_time, hours, minutes, seconds)
 
             // Setup click listener
             itemView.setOnClickListener {
