@@ -4,6 +4,8 @@
     <string name="tracking_channel_description">Channel for tracking notifications</string>
     <string name="navigation_drawer_open">Open</string>
     <string name="navigation_drawer_close">Close</string>
+    <string name="navigation_drawer_main">Main</string>
+    <string name="navigation_drawer_history">History</string>
     <string name="button_start">START</string>
     <string name="button_pause">PAUSE</string>
     <string name="button_resume">RESUME</string>
@@ -14,6 +16,10 @@
     <string name="button_cancel">Cancel</string>
     <string name="button_retry">Retry</string>
     <string name="button_delete_token">Remove token</string>
+    <string name="button_export_all">Export all</string>
+    <string name="button_export_gpx">Export to GPX</string>
+    <string name="button_delete">Delete</string>
+    <string name="button_sync_account">Sync</string>
     <string name="network_sent_kilobytes">Sent: %1$d kB</string>
     <string name="network_sent_kilobytes_init">Sent: 0 kB</string>
     <string name="network_received_kilobytes">Received: %1$d kB</string>
