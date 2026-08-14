@@ -18,6 +18,8 @@
     <string name="network_sent_kilobytes_init">Sent: 0 kB</string>
     <string name="network_received_kilobytes">Received: %1$d kB</string>
     <string name="network_received_kilobytes_init">Received: 0 kB</string>
+    <string name="tracking_started">Tracking started</string>
+    <string name="tracking_saved_to_db">Saved tracking session to database</string>
     <string name="tracking_elapsed_time">Time: %1$02d:%2$02d:%3$02d</string>
     <string name="tracking_distance_kilometers">Distance: %1$.2f km</string>
     <string name="tracking_distance_meters">Distance: %1$.2f m</string>
@@ -52,6 +54,8 @@
     <string name="title_login">Login</string>
     <string name="title_error">Error</string>
     <string name="title_register">Register</string>
+    <string name="tracking_paused">Tracking Paused</string>
+    <string name="tracking_active">Tracking Active</string>
     <string name="session_deleted">Session deleted</string>
     <string name="confirm_user_choice">Are you sure?</string>
     <string name="modal_no">No</string>
@@ -60,4 +64,5 @@
     <string name="error_field_required">Required</string>
     <string name="error_all_fields_required">All fields required</string>
     <string name="error_passwords_must_match">Passwords must match</string>
+    <string name="error_no_location_updates">No location updates received!</string>
 </resources>

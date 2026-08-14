@@ -16,6 +16,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.widget.Toast
+import androidx.annotation.StringRes
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -197,7 +198,7 @@ class TrackingService : Service() {
         // Start as foreground service with initial notification
         startForeground(NOTIFICATION_ID, buildNotification())
 
-        Toast.makeText(this, "Tracking started", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, R.string.tracking_started, Toast.LENGTH_SHORT).show()
     }
 
     // Pause tracking: remove location updates; add the current active period to the total
@@ -237,7 +238,7 @@ class TrackingService : Service() {
             notifyStateChanged()
 
             if (pathSegments.first().isEmpty()) {
-                Toast.makeText(this, "No location updates received!", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, R.string.error_no_location_updates, Toast.LENGTH_LONG).show()
                 return
             }
 
@@ -294,7 +295,7 @@ class TrackingService : Service() {
                 }
                 database.pointDao().insertPoints(points)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@TrackingService, "Saved tracking session to database", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@TrackingService, R.string.tracking_saved_to_db, Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -310,9 +311,9 @@ class TrackingService : Service() {
         // Save the GPX data
         try {
             gpxFile.writeText(gpxData)
-            Toast.makeText(this, "GPX saved as $fileName", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.export_success_gpx, Toast.LENGTH_LONG).show()
         } catch (ex: Exception) {
-            Toast.makeText(this, "Failed to save GPX: ${ex.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.export_failed, ex.localizedMessage), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -325,7 +326,7 @@ class TrackingService : Service() {
         }
         val gpxBuilder = StringBuilder()
         gpxBuilder.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-        gpxBuilder.append("<gpx version=\"1.1\" creator=\"YourAppName\">\n")
+        gpxBuilder.append("<gpx version=\"1.1\" creator=\"${getString(R.string.app_name)}\">\n")
         /*gpxBuilder.append("  <trk>\n    <trkseg>\n")
 
         for (location in locations) {
@@ -381,19 +382,25 @@ class TrackingService : Service() {
     }*/
 
     // Format seconds into HH:MM:SS
-    private fun formatTime(seconds: Long): String {
+    /*private fun formatTime(seconds: Long): String {
         val hours = seconds / 3600
         val minutes = (seconds % 3600) / 60
         val secs = seconds % 60
         return String.format("%02d:%02d:%02d", hours, minutes, secs)
-    }
+    }*/
 
     private fun buildNotification(): Notification {
         val elapsedSeconds = getElapsedTimeSeconds()
         val totalDistanceMeters = getTotalDistance()
         val distanceKm = totalDistanceMeters / 1000.0
-        val timeFormatted = formatTime(elapsedSeconds)
-        val contentText = "Time: $timeFormatted | Distance: %.2f km".format(distanceKm)
+
+        val hours = elapsedSeconds / 3600
+        val minutes = (elapsedSeconds % 3600) / 60
+        val secs = elapsedSeconds % 60
+
+        //val timeFormatted = formatTime(elapsedSeconds)
+        //val contentText = "Time: $timeFormatted | Distance: %.2f km".format(distanceKm)
+        val contentText = "${getString(R.string.tracking_elapsed_time, hours, minutes, secs)} | ${getString(R.string.tracking_distance_kilometers, distanceKm)}"
 
         // PendingIntent to trigger STOP action
         val stopIntent = Intent(this, TrackingService::class.java).apply {
@@ -410,13 +417,13 @@ class TrackingService : Service() {
         val (actionIntent, actionTitle, actionIcon) = if (isPaused) {
             Triple(
                 Intent(this, TrackingService::class.java).apply { action = ACTION_RESUME },
-                "RESUME",
+                getString(R.string.button_resume),
                 R.drawable.ic_resume
             )
         } else {
             Triple(
                 Intent(this, TrackingService::class.java).apply { action = ACTION_PAUSE },
-                "PAUSE",
+                getString(R.string.button_pause),
                 R.drawable.ic_pause
             )
         }
@@ -439,12 +446,12 @@ class TrackingService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Tracking " + if (isPaused) "Paused" else "Active")
+            .setContentTitle(if (isPaused) getString(R.string.tracking_paused) else getString(R.string.tracking_active))
             .setContentText(contentText)
             .setSmallIcon(R.drawable.ic_tracking)
             .setContentIntent(openAppPendingIntent) // Opens the app then notification tapped
             .addAction(actionIcon, actionTitle, actionPendingIntent)
-            .addAction(R.drawable.ic_stop, "STOP", stopPendingIntent)
+            .addAction(R.drawable.ic_stop, getString(R.string.button_stop), stopPendingIntent)
             .setOngoing(true) // Makes notification non-dismissible
             .build()
     }
@@ -509,6 +516,9 @@ class TrackingService : Service() {
         const val NOTIFICATION_ID = 1
         const val CHANNEL_ID = "tracking_channel"
 
+        @StringRes
+        val APP_NAME = R.string.app_name
+
         // Gather points from DB and assemble GPX text
         suspend fun generateGPX(context: Context, sessionId: Long): String {
             val db = TrackingDatabase.getDatabase(context)
@@ -520,7 +530,7 @@ class TrackingService : Service() {
         // Generate GPX XML string from database record
         private fun generateGPXFromSession(sessionWithSegments: TrackingSessionWithSegments): String {
             val builder = StringBuilder()
-            builder.append("""<gpx version="1.1" creator="pl.igorwumk.drivetracker">""")
+            builder.append("""<gpx version="1.1" creator="${APP_NAME}">""")
             builder.append("\n  <metadata>")
             builder.append("\n    <time>${java.util.Date(sessionWithSegments.session.startTime)}</time>")
             builder.append("\n    <author><name>${sessionWithSegments.session.locale}</name></author>")
