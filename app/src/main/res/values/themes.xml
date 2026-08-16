@@ -2,10 +2,17 @@
 <resources>
 
     <!-- style name="Theme.DriveTracker" parent="android:Theme.Material.Light.NoActionBar" /-->
-    <style name="Theme.DriveTracker" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="colorPrimary">@color/purple_200</item>
+    <!-- <style name="Theme.DriveTracker" parent="Theme.AppCompat.Light.NoActionBar"> -->
+    <style name="Theme.DriveTracker" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorSecondary">@color/teal_200</item>
+
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+
+        <!-- <item name="colorPrimary">@color/purple_200</item>
         <item name="colorSecondary">@color/purple_500</item>
-        <item name="colorTertiary">@color/purple_700</item>
+        <item name="colorTertiary">@color/purple_700</item> -->
 
         <!--item name="colorPrimaryDark">#FFD0BCFF</item -->
     </style>

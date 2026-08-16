@@ -8,5 +8,6 @@
         android:id="@+id/action_sync"
         android:icon="@drawable/ic_sync_circle"
         android:title="@string/button_sync_account"
+        app:iconTint="@color/white"
         app:showAsAction="always" />
 </menu>
