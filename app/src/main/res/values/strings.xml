@@ -60,6 +60,7 @@
     <string name="title_login">Login</string>
     <string name="title_error">Error</string>
     <string name="title_register">Register</string>
+    <string name="title_tracking_details">Tracking Details</string>
     <string name="tracking_paused">Tracking Paused</string>
     <string name="tracking_active">Tracking Active</string>
     <string name="session_deleted">Session deleted</string>
