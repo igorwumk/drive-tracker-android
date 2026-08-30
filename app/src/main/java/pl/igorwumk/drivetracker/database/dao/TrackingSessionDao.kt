@@ -34,6 +34,14 @@ interface TrackingSessionDao {
     @Query("SELECT * FROM tracking_sessions WHERE sessionId = :sessionId")
     suspend fun getSessionWithSegments(sessionId: Long): TrackingSessionWithSegments?
 
+    @Transaction
+    @Query("""
+    SELECT * FROM tracking_sessions
+    WHERE status NOT IN ('deleted','deletePending')
+    ORDER BY startTime ASC
+  """)
+    suspend fun getFullActiveSessions(): List<TrackingSessionWithSegments?>
+
     @Query("UPDATE tracking_sessions SET status = :newStatus WHERE sessionId = :sessionId")
     suspend fun updateSyncStatus(sessionId: Long, newStatus: String)
 
