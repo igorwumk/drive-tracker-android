@@ -528,7 +528,7 @@ class TrackingService : Service() {
         }
 
         // Generate GPX XML string from database record
-        private fun generateGPXFromSession(sessionWithSegments: TrackingSessionWithSegments): String {
+        fun generateGPXFromSession(sessionWithSegments: TrackingSessionWithSegments): String {
             val builder = StringBuilder()
             builder.append("""<gpx version="1.1" creator="${APP_NAME}">""")
             builder.append("\n  <metadata>")
